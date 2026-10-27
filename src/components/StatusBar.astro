@@ -1,0 +1,76 @@
+---
+// iOS status bar from the Purps Figma header (node 12870:17107). The prototype
+// expects iOS to draw this when installed as a PWA, so the web embed adds it.
+---
+
+<div class="status-bar" aria-hidden="true">
+	<span class="time">9:41</span>
+	<span class="island"></span>
+	<span class="icons">
+		<svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor">
+			<rect x="0" y="8" width="3" height="4" rx="1" />
+			<rect x="5" y="5.5" width="3" height="6.5" rx="1" />
+			<rect x="10" y="3" width="3" height="9" rx="1" />
+			<rect x="15" y="0" width="3" height="12" rx="1" />
+		</svg>
+		<svg width="17" height="12.5" viewBox="0 0 17 12.5">
+			<!-- Three bands fanning ±45° from one point at the bottom centre -->
+			<g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+				<path d="M1.43 4.73A10 10 0 0 1 15.57 4.73" />
+				<path d="M4.19 7.49A6.1 6.1 0 0 1 12.81 7.49" />
+			</g>
+			<path
+				d="M8.5 11.8 6.1 9.4A3.4 3.4 0 0 1 10.9 9.4Z"
+				fill="currentColor"
+				stroke="currentColor"
+				stroke-width="1"
+				stroke-linejoin="round"
+			/>
+		</svg>
+		<svg width="27" height="13" viewBox="0 0 27 13" fill="none">
+			<rect x="0.5" y="0.5" width="23" height="12" rx="3.8" stroke="currentColor" opacity="0.35" />
+			<rect x="2" y="2" width="20" height="9" rx="2.5" fill="currentColor" />
+			<path d="M25 4.5v4c.8-.3 1.3-1.1 1.3-2s-.5-1.7-1.3-2Z" fill="currentColor" opacity="0.4" />
+		</svg>
+	</span>
+</div>
+
+<style>
+	.status-bar {
+		position: relative;
+		flex: none;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		height: 60px;
+		padding: 0 30px 0 38px;
+		background: #111010;
+		color: #fff;
+		font-family: var(--font-sans);
+	}
+
+	.time {
+		width: 54px;
+		font-size: 17px;
+		font-weight: 700;
+		letter-spacing: -0.4px;
+		text-align: center;
+	}
+
+	.island {
+		position: absolute;
+		top: 11px;
+		left: 50%;
+		width: 125px;
+		height: 37px;
+		border-radius: 20px;
+		background: #000;
+		transform: translateX(-50%);
+	}
+
+	.icons {
+		display: flex;
+		align-items: center;
+		gap: 7px;
+	}
+</style>

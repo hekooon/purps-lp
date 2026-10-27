@@ -1,4 +1,6 @@
 ---
+import StatusBar from './StatusBar.astro';
+
 interface Props {
 	src: string;
 	title: string;
@@ -8,7 +10,12 @@ const { src, title } = Astro.props;
 ---
 
 <div class="prototype">
-	<iframe {src} {title} allow="clipboard-write; fullscreen"></iframe>
+	<div class="phone-shadow">
+		<div class="phone">
+			<StatusBar />
+			<iframe {src} {title} allow="clipboard-write; fullscreen"></iframe>
+		</div>
+	</div>
 </div>
 
 <style>
@@ -20,14 +27,53 @@ const { src, title } = Astro.props;
 		padding: 24px 16px;
 	}
 
-	iframe {
+	/* The phone is clipped to a squircle, which would cut off a box-shadow,
+	   so the shadow is drawn from the clipped shape by the parent instead. */
+	.phone-shadow {
+		max-width: 100%;
+		filter: drop-shadow(0 24px 64px rgba(0, 0, 0, 0.35));
+	}
+
+	.phone {
+		display: flex;
+		flex-direction: column;
 		width: 393px;
 		max-width: 100%;
 		height: 852px;
 		max-height: calc(100vh - 48px);
+		overflow: hidden;
+		/* Plain rounded corners until the script swaps in the smoothed path */
+		border-radius: 60px;
+		background: #111010;
+	}
+
+	iframe {
+		flex: 1;
+		width: 100%;
 		border: 0;
-		border-radius: 48px;
-		background: #000;
-		box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+		background: #111010;
 	}
 </style>
+
+<script>
+	import { getSvgPath } from 'figma-squircle';
+
+	// iOS continuous corners: Figma's corner smoothing at 60% matches them.
+	const CORNER_RADIUS = 60;
+	const CORNER_SMOOTHING = 0.6;
+
+	for (const phone of document.querySelectorAll<HTMLElement>('.phone')) {
+		new ResizeObserver(([entry]) => {
+			const { inlineSize: width, blockSize: height } = entry.borderBoxSize[0];
+			const path = getSvgPath({
+				width,
+				height,
+				cornerRadius: CORNER_RADIUS,
+				cornerSmoothing: CORNER_SMOOTHING,
+				preserveSmoothing: true,
+			});
+			phone.style.clipPath = `path('${path}')`;
+			phone.style.borderRadius = '0';
+		}).observe(phone);
+	}
+</script>
