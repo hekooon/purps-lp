@@ -5,9 +5,32 @@ import PrototypeFrame from '../components/PrototypeFrame.astro';
 
 <Layout title="Hello">
 	<main>
+		<h1 class="hero text-hero">
+			<span>Trade what’s moving</span>
+			<span>Follow who’s winning.</span>
+		</h1>
 		<PrototypeFrame
 			src="https://purps-demo-main.vercel.app/prototypes/trade-entry/index.html"
 			title="Purps trade entry prototype"
 		/>
 	</main>
 </Layout>
+
+<style>
+	main {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 56px;
+		padding: 80px 16px 64px;
+	}
+
+	.hero {
+		margin: 0;
+		text-align: center;
+	}
+
+	.hero span {
+		display: block;
+	}
+</style>

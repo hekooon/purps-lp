@@ -1,0 +1,39 @@
+/* Purps color tokens, from the Figma "Color" frame (node 12061:37315).
+   Names follow the Figma variable paths: text/primary → --color-text-primary.
+   Values come from the Figma variables, which differ slightly from the labels
+   written on the frame (secondary, tertiary and the 30% "-mid" alphas). */
+
+:root {
+  /* Text */
+  --color-text-primary: #f4f3ef;
+  --color-text-secondary: #a2a29e;
+  --color-text-tertiary: #767571;
+  --color-text-on-color: #111010;
+  --color-text-positive: #7dd65c;
+  --color-text-warning: #f5b342;
+  --color-text-negative: #ff5c4a;
+  --color-text-accent: #a78bfa;
+
+  /* Border */
+  --color-border-default: #2e2d2c;
+  --color-border-muted: #1e1e1d;
+
+  /* Surface: neutral */
+  --color-surface-neutral-bg: #111010;
+  --color-surface-neutral-container: #1e1e1d;
+  --color-surface-neutral-inverse: #f4f3ef;
+
+  /* Surface: color */
+  --color-surface-color-positive: #7dd65c;
+  --color-surface-color-positive-mid: #7dd65c4d;
+  --color-surface-color-positive-muted: #7dd65c14;
+  --color-surface-color-warning: #f5b342;
+  --color-surface-color-warning-mid: #f5b3424d;
+  --color-surface-color-warning-muted: #f5b34214;
+  --color-surface-color-negative: #ff5c4a;
+  --color-surface-color-negative-mid: #ff5c4a4d;
+  --color-surface-color-negative-muted: #ff5c4a14;
+  --color-surface-color-accent: #a78bfa;
+  --color-surface-color-accent-mid: #a78bfa4d;
+  --color-surface-color-accent-muted: #a78bfa14;
+}

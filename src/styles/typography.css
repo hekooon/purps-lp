@@ -1,0 +1,18 @@
+/* Text styles. Each style is a set of variables plus a `font` shorthand
+   variable, and a matching utility class that applies it. */
+
+:root {
+  /* Hero: large display title */
+  --text-hero-family: var(--font-serif);
+  --text-hero-weight: 700;
+  --text-hero-size: clamp(36px, 9vw, 104px);
+  --text-hero-line-height: 0.95;
+  --text-hero-letter-spacing: -0.04em;
+  --text-hero: var(--text-hero-weight) var(--text-hero-size) / var(--text-hero-line-height)
+    var(--text-hero-family);
+}
+
+.text-hero {
+  font: var(--text-hero);
+  letter-spacing: var(--text-hero-letter-spacing);
+}
