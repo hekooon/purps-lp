@@ -1,0 +1,303 @@
+---
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+// Market icons and trader avatars floating loose behind the section, in the
+// spirit of Uniswap's hero: scattered round images of different sizes, the
+// smaller ones blurrier and fainter as if further back, each bobbing gently.
+// They keep out of a band down the middle (where the title and phone are),
+// and the script nudges any that still land behind something marked
+// [data-floaters-avoid] out to the side. Place inside a positioned element;
+// this fills it and sits behind it.
+//
+// HeroRings.astro is the earlier take, with the images on two turning rings.
+const glob = (files: Record<string, { default: ImageMetadata }>) =>
+	Object.values(files).map((file) => file.default);
+const coins = glob(import.meta.glob('../assets/markets/*.png', { eager: true }));
+// Only the .jpg portraits: the folder also holds the title's .webp traders
+const avatars = glob(import.meta.glob('../assets/avatars/*.jpg', { eager: true }));
+
+// How many of each to show. The spots are fixed; which images fill them is
+// picked at random by the script on every load, from all of them.
+const COINS = 9;
+const AVATARS = 9;
+const spots = Math.min(COINS, coins.length) + Math.min(AVATARS, avatars.length);
+
+// Spread: rows evenly down the section; across, each steps on by the golden
+// ratio, which spreads any number evenly without lining them up. They keep
+// out of a clear band down the middle (CLEAR of each half of the window)
+// and run a little past both edges.
+const GOLDEN = (Math.sqrt(5) - 1) / 2;
+const CLEAR = 0.45;
+const spreadX = (t: number) => {
+	const fromCentre = Math.abs(2 * t - 1);
+	const pushed = CLEAR + (1 - CLEAR) * fromCentre;
+	return 50 + Math.sign(t - 0.5) * 52 * pushed;
+};
+const spreadY = (t: number) => 6 + 88 * t;
+// Deterministic variety, so the layout is the same from build to build
+const vary = (i: number, seed: number) => {
+	const n = Math.sin((i + 1) * seed) * 43758.5453;
+	return n - Math.floor(n);
+};
+
+// Parallax: how far behind the page each image falls as it scrolls, as a
+// share of the scroll. Far ones lag most, so they seem furthest back.
+const FAR_LAG = 0.4;
+const NEAR_LAG = 0.08;
+
+// Each image tilts by MIN_TILT to MAX_TILT degrees
+const MIN_TILT = 3;
+const MAX_TILT = 12;
+
+// Depth 0 (far: small, 6px blur, 35%, slowest to scroll) to 1 (near: big,
+// 3px blur, 80%, nearly keeping up with the page)
+const floaters = Array.from({ length: spots }, (_, i) => {
+	const depth = vary(i, 12.9898);
+	return {
+		style: [
+			`--x: ${spreadX((0.9 + i * GOLDEN) % 1).toFixed(2)}%`,
+			`--y: ${spreadY((i + 0.5) / spots).toFixed(2)}%`,
+			`--size: ${(0.55 + 0.75 * depth).toFixed(2)}`,
+			`--blur: ${(3 + 3 * (1 - depth)).toFixed(1)}px`,
+			`--opacity: ${(0.35 + 0.45 * depth).toFixed(2)}`,
+			`--lag: ${(FAR_LAG + (NEAR_LAG - FAR_LAG) * depth).toFixed(3)}`,
+			// A slight fixed tilt, about an axis pointing anywhere, so it leans
+			// a little on all three at once
+			`--axis: ${(2 * vary(i, 11.31) - 1).toFixed(2)} ${(2 * vary(i, 23.77) - 1).toFixed(2)} ${(
+				2 * vary(i, 5.913) -
+				1
+			).toFixed(2)}`,
+			`--angle: ${(MIN_TILT + (MAX_TILT - MIN_TILT) * vary(i, 61.7)).toFixed(1)}deg`,
+			`--dx: ${(4 + 6 * vary(i, 78.233)).toFixed(1) * (i % 2 ? 1 : -1)}px`,
+			`--dy: ${(8 + 8 * vary(i, 37.719)).toFixed(1)}px`,
+			`--duration: ${(6 + 5 * vary(i, 4.1414)).toFixed(2)}s`,
+			`--delay: ${(-11 * vary(i, 91.17)).toFixed(2)}s`,
+		].join('; '),
+	};
+});
+---
+
+<div class="floaters" aria-hidden="true" data-coins={COINS} data-avatars={AVATARS}>
+	<!-- Empty spots; the script fills them -->
+	{floaters.map(({ style }) => <span class="floater" {style} />)}
+	<!-- Everything they can be filled with, left unloaded until picked -->
+	{
+		coins.map((src) => (
+			<span class="source" data-kind="coin">
+				<Image {src} alt="" width={240} height={240} loading="lazy" />
+			</span>
+		))
+	}
+	{
+		avatars.map((src) => (
+			<span class="source" data-kind="avatar">
+				<Image {src} alt="" width={240} height={240} loading="lazy" />
+			</span>
+		))
+	}
+</div>
+
+<style>
+	/* As wide as the window, whatever the width of the section it's in */
+	.floaters {
+		position: absolute;
+		inset: 0;
+		left: 50%;
+		width: 100vw;
+		translate: -50% 0;
+		z-index: -1;
+		pointer-events: none;
+	}
+
+	/* Parallax, image by image: over the first --parallax-range of
+	   scrolling, each slides down by its own --lag of that, so the far ones
+	   fall behind the text and phone most and the near ones least. The
+	   script drives it instead where scroll-driven animations aren't
+	   supported. */
+	.floaters {
+		--parallax-range: 1600px;
+	}
+
+	@supports (animation-timeline: scroll()) {
+		.floater {
+			animation-name: parallax;
+			animation-timing-function: linear;
+			animation-fill-mode: both;
+			animation-timeline: scroll(root);
+			animation-range: 0 var(--parallax-range);
+		}
+	}
+
+	@keyframes parallax {
+		from {
+			transform: none;
+		}
+		to {
+			transform: translateY(calc(var(--parallax-range) * var(--lag)));
+		}
+	}
+
+	.source {
+		display: none;
+	}
+
+	/* Hidden until the script has put its image in and it's loaded */
+	.floater {
+		position: absolute;
+		left: var(--x);
+		top: var(--y);
+		width: calc(clamp(56px, 7vw, 112px) * var(--size));
+		aspect-ratio: 1;
+		translate: -50% -50%;
+		filter: blur(var(--blur));
+		opacity: 0;
+		transition: opacity 600ms ease-out;
+	}
+
+	.floater.is-ready {
+		opacity: var(--opacity);
+	}
+
+	/* Perspective, so each image's tilt reads as leaning in depth */
+	.floater {
+		perspective: 500px;
+	}
+
+	.floater :global(img) {
+		display: block;
+		width: 100%;
+		height: auto;
+		border-radius: 999px;
+		rotate: var(--axis) var(--angle);
+		animation: bob var(--duration) ease-in-out var(--delay) infinite;
+	}
+
+	/* A slow loop: up and across one way, back past the start the other way,
+	   home */
+	@keyframes bob {
+		0%,
+		100% {
+			transform: translate(0, 0);
+		}
+		33% {
+			transform: translate(var(--dx), calc(var(--dy) * -1));
+		}
+		66% {
+			transform: translate(calc(var(--dx) * -0.6), calc(var(--dy) * 0.5));
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.floater,
+		.floater :global(img) {
+			animation: none;
+		}
+	}
+</style>
+
+<script>
+	// Space kept clear around the text, and the smallest share of an image that
+	// stays on screen when the nearer side has no room
+	const GAP = 24;
+	const MIN_VISIBLE = 0.5;
+
+	const scrollTimelines = CSS.supports('animation-timeline: scroll()');
+	const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+	for (const layer of document.querySelectorAll<HTMLElement>('.floaters')) {
+		const section = layer.parentElement;
+		if (!section) continue;
+		const floaters = [...layer.querySelectorAll<HTMLElement>('.floater')];
+
+		// Fill the spots with a fresh random pick every load: COINS icons and
+		// AVATARS faces, shuffled together. Each fades in once its image loads.
+		const shuffle = <T,>(items: T[]) => {
+			const out = [...items];
+			for (let i = out.length - 1; i > 0; i--) {
+				const j = Math.floor(Math.random() * (i + 1));
+				[out[i], out[j]] = [out[j], out[i]];
+			}
+			return out;
+		};
+		const sources = (kind: string) =>
+			[...layer.querySelectorAll<HTMLImageElement>(`.source[data-kind="${kind}"] img`)];
+		const picked = shuffle([
+			...shuffle(sources('coin')).slice(0, Number(layer.dataset.coins)),
+			...shuffle(sources('avatar')).slice(0, Number(layer.dataset.avatars)),
+		]);
+		floaters.forEach((floater, i) => {
+			const source = picked[i];
+			if (!source) return;
+			const img = source.cloneNode() as HTMLImageElement;
+			img.loading = 'eager';
+			const show = () => floater.classList.add('is-ready');
+			img.addEventListener('load', show, { once: true });
+			floater.append(img);
+			if (img.complete && img.naturalWidth) show();
+		});
+		const avoid = [...section.querySelectorAll<HTMLElement>('[data-floaters-avoid]')];
+
+		// Without scroll-driven animations, follow the scroll here instead
+		const fallback = !scrollTimelines && !reducedMotion;
+		const parallax = () => {
+			const range = parseFloat(getComputedStyle(layer).getPropertyValue('--parallax-range'));
+			const scrolled = Math.min(window.scrollY, range);
+			for (const floater of floaters) {
+				const lag = parseFloat(floater.style.getPropertyValue('--lag'));
+				floater.style.transform = `translateY(${scrolled * lag}px)`;
+			}
+		};
+		if (fallback) {
+			let frame = 0;
+			window.addEventListener(
+				'scroll',
+				() => {
+					cancelAnimationFrame(frame);
+					frame = requestAnimationFrame(parallax);
+				},
+				{ passive: true },
+			);
+		}
+
+		// Any image that lands behind the text moves out past its nearer side
+		const place = () => {
+			for (const floater of floaters) {
+				floater.style.left = '';
+				floater.style.animation = 'none';
+				floater.style.transform = 'none';
+			}
+			const bounds = layer.getBoundingClientRect();
+			const zones = avoid.map((el) => {
+				const r = el.getBoundingClientRect();
+				return { left: r.left - GAP, right: r.right + GAP, top: r.top - GAP, bottom: r.bottom + GAP };
+			});
+			for (const floater of floaters) {
+				const r = floater.getBoundingClientRect();
+				const hit = zones.find(
+					(z) => r.right > z.left && r.left < z.right && r.bottom > z.top && r.top < z.bottom,
+				);
+				if (!hit) continue;
+				const toLeft = (r.left + r.right) / 2 < (hit.left + hit.right) / 2;
+				const half = r.width / 2;
+				const reach = half - r.width * MIN_VISIBLE;
+				const centre = toLeft
+					? Math.max(hit.left - half, bounds.left - reach)
+					: Math.min(hit.right + half, bounds.right + reach);
+				floater.style.left = `${centre - bounds.left}px`;
+			}
+			for (const floater of floaters) {
+				floater.style.animation = '';
+				floater.style.transform = '';
+			}
+			if (fallback) parallax();
+		};
+
+		// Again whenever the window changes size or the fonts arrive. Not the
+		// text itself: the title's intro changes its width as it plays.
+		const observer = new ResizeObserver(place);
+		observer.observe(layer);
+		place();
+		document.fonts.ready.then(place);
+	}
+</script>

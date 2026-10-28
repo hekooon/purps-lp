@@ -3,7 +3,7 @@ import StatusBar from './StatusBar.astro';
 import TouchCursor from './TouchCursor.astro';
 
 // 3D take on PrototypeFrame.astro (kept as the 2D version): the same iPhone 17
-// front, tilted in perspective with a solid golden band you can see the
+// front, tilted in perspective with a solid band in the site's container colour you can see the
 // thickness of along the right side and bottom edge.
 
 interface Props {
@@ -15,7 +15,8 @@ const { src, title } = Astro.props;
 
 // The band's thickness is built from stacked copies of the outer outline
 // behind the front face, so the rounded corners extrude correctly. Shaded
-// lighter near the front edge and darker towards the back.
+// in the container colour (--color-surface-neutral-container, #1e1e1d) at
+// the front edge, darkening towards the back.
 // iPhone 17 is 7.95mm thick and 71.5mm wide, which is 46px at this size
 const DEPTH = 46;
 const LAYERS = 16;
@@ -23,12 +24,13 @@ const mix = (from: number[], to: number[], t: number) =>
 	`rgb(${from.map((c, i) => Math.round(c + (to[i] - c) * t)).join(' ')})`;
 const extrusion = Array.from({ length: LAYERS }, (_, i) => ({
 	z: -((i + 1) * DEPTH) / LAYERS,
-	color: mix([201, 181, 142], [92, 77, 54], i / (LAYERS - 1)),
+	color: mix([30, 30, 29], [19, 18, 18], i / (LAYERS - 1)),
 }));
 ---
 
 <div class="prototype">
-	<div class="stage">
+	<!-- The phone's box; floating images behind the hero arrange around it -->
+	<div class="stage" data-floaters-centre>
 		<div class="scene">
 			<div class="device" style={`--depth: ${DEPTH}px`}>
 				{
@@ -51,26 +53,26 @@ const extrusion = Array.from({ length: LAYERS }, (_, i) => ({
 
 				<!-- Right edge: side button and Camera Control -->
 				<span class="edge-button side" aria-hidden="true">
-					<span class="groove"></span>
 					<span class="wall"></span>
 					<span class="wall"></span>
 					<span class="cap"></span>
 				</span>
 				<span class="edge-button camera-control" aria-hidden="true">
-					<span class="groove"></span>
 					<span class="cap"></span>
 				</span>
 
 				<div class="front">
-					<!-- Aluminium band (outer edge, polished face, inner lip), then the black bezel -->
-					<span class="band-edge" data-squircle="73" aria-hidden="true"></span>
-					<span class="band-face" data-squircle="72" aria-hidden="true"></span>
-					<span class="band-lip" data-squircle="69" aria-hidden="true"></span>
+					<!-- Metal band, then the black bezel -->
+					<span class="band-face" data-squircle="73" aria-hidden="true"></span>
 					<span class="bezel" data-squircle="68" aria-hidden="true"></span>
 
 					<div class="phone" data-squircle="60">
 						<StatusBar />
-						<iframe {src} {title} allow="clipboard-write; fullscreen"></iframe>
+						<!-- Loaded by the script once the title's first line has played -->
+						<iframe data-src={src} {title} allow="clipboard-write; fullscreen"></iframe>
+						<!-- Covers the prototype outside the demo, so nothing reaches it -->
+						<span class="shield" aria-hidden="true"></span>
+						<span class="loader" aria-hidden="true"></span>
 						<span class="glare" aria-hidden="true"></span>
 					</div>
 				</div>
@@ -78,6 +80,15 @@ const extrusion = Array.from({ length: LAYERS }, (_, i) => ({
 		</div>
 	</div>
 	<TouchCursor />
+
+	<!-- Demo mode: the phone glides to the middle of the window over a dimmed
+	     backdrop. Opened by any element marked [data-demo]. -->
+	<div class="demo-backdrop" aria-hidden="true"></div>
+	<button class="demo-close" type="button" aria-label="Close demo" tabindex="-1">
+		<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+			<path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+		</svg>
+	</button>
 </div>
 
 <style>
@@ -88,10 +99,100 @@ const extrusion = Array.from({ length: LAYERS }, (_, i) => ({
 		initial-value: 1;
 	}
 
+	/* Only the phone itself and the demo's own pieces take the pointer: the
+	   full-width box and the phone's untilted outline let it through to what's
+	   behind (the rings) */
 	.prototype {
 		display: flex;
 		justify-content: center;
 		width: 100%;
+		pointer-events: none;
+	}
+
+	.device,
+	.demo-backdrop,
+	.demo-close {
+		pointer-events: auto;
+	}
+
+	/* Demo mode. The backdrop and close button cover the window; the phone
+	   sits above the backdrop (all inside the hero, which the page lifts above
+	   the nav while the demo is open). */
+	.demo-backdrop,
+	.demo-close {
+		position: fixed;
+		opacity: 0;
+		visibility: hidden;
+		transition:
+			opacity 300ms ease-out,
+			visibility 0s 300ms;
+	}
+
+	.demo-backdrop {
+		inset: 0;
+		z-index: 1;
+		background: rgb(0 0 0 / 0.5);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+	}
+
+	.demo-close {
+		top: 16px;
+		right: 16px;
+		z-index: 3;
+		display: grid;
+		place-items: center;
+		width: 40px;
+		height: 40px;
+		padding: 0;
+		border: 0;
+		border-radius: 999px;
+		background: var(--color-surface-neutral-container);
+		color: var(--color-text-primary);
+		cursor: pointer;
+	}
+
+	.prototype.is-demo .demo-backdrop,
+	.prototype.is-demo .demo-close {
+		opacity: 1;
+		visibility: visible;
+		transition: opacity 300ms ease-out;
+	}
+
+	.demo-close:hover {
+		background: var(--color-button-secondary-hover);
+	}
+
+	.prototype.is-demo .stage {
+		position: relative;
+		z-index: 2;
+	}
+
+	/* Outside the demo the prototype is just a picture: no taps, clicks or
+	   scrolling reach it, and clicking the phone opens the demo instead. The
+	   frame ignores the pointer, and a transparent shield covers it too, as
+	   Safari can still send scrolling to a frame that ignores the pointer. */
+	.prototype:not(.is-demo) iframe {
+		pointer-events: none;
+	}
+
+	.shield {
+		position: absolute;
+		inset: 0;
+		display: none;
+	}
+
+	.prototype:not(.is-demo) .shield {
+		display: block;
+	}
+
+	.prototype:not(.is-demo) .device {
+		cursor: pointer;
+	}
+
+	/* The page doesn't scroll behind the demo */
+	:global(html.demo-open) {
+		overflow: hidden;
 	}
 
 	/* Scaled and offset by the script so the tilted phone's visible outline
@@ -110,16 +211,24 @@ const extrusion = Array.from({ length: LAYERS }, (_, i) => ({
 		--tilt: 1;
 		perspective: 2400px;
 		filter: drop-shadow(0 48px 48px rgba(0, 0, 0, 0.55));
+		/* Face-on, the phone's top sits higher than when tilted; it moves down
+		   by that difference (--drop, set by the script) as it straightens, so
+		   its top edge stays put */
+		transform: translateY(calc((1 - var(--tilt)) * var(--drop, 0px)));
 	}
 
 	@supports (animation-timeline: scroll()) {
 		@media (prefers-reduced-motion: no-preference) {
 			.scene {
 				animation-name: phone-settle;
-				animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+				/* Ease-in-out sine: soft at both ends, but at its fastest only half
+				   the speed of a cubic ease-in-out */
+				animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
 				animation-fill-mode: both;
 				animation-timeline: scroll(root);
-				animation-range: 0 var(--settle, 400px);
+				/* Holds the tilt for the first tenth of the scroll to where the phone
+				   is centred, then turns over half as far again past it */
+				animation-range: calc(var(--settle, 400px) * 0.1) calc(var(--settle, 400px) * 1.5);
 			}
 		}
 	}
@@ -145,9 +254,9 @@ const extrusion = Array.from({ length: LAYERS }, (_, i) => ({
 		height: calc(874px + 2 * (var(--band) + var(--bezel)));
 		transform-style: preserve-3d;
 		transform:
-			rotateZ(calc(var(--tilt) * 16deg))
-			rotateX(calc(var(--tilt) * 28deg))
-			rotateY(calc(var(--tilt) * -26deg));
+			rotateZ(calc(var(--tilt) * 13deg))
+			rotateX(calc(var(--tilt) * 22deg))
+			rotateY(calc(var(--tilt) * -21deg));
 	}
 
 	.extrude {
@@ -163,48 +272,26 @@ const extrusion = Array.from({ length: LAYERS }, (_, i) => ({
 		padding: calc(var(--band) + var(--bezel));
 	}
 
-	.band-edge,
 	.band-face,
-	.band-lip,
 	.bezel {
 		position: absolute;
 	}
 
-	.band-edge {
+	/* The site's container colour, with a faint sheen on the long edges. It
+	   runs straight from the outer edge to the bezel, with no dark rims, so
+	   it reads as one piece. */
+	.band-face {
 		inset: 0;
 		border-radius: 73px;
-		background: linear-gradient(180deg, #2a2318, #15110b);
-	}
-
-	/* Brushed champagne gold: soft diagonal light bands plus a sheen on
-	   the long edges */
-	.band-face {
-		inset: 1px;
-		border-radius: 72px;
 		background:
 			linear-gradient(
 				90deg,
-				rgba(255, 236, 200, 0.16),
+				rgba(240, 232, 220, 0.06),
 				transparent 6%,
 				transparent 94%,
-				rgba(255, 236, 200, 0.16)
+				rgba(240, 232, 220, 0.06)
 			),
-			linear-gradient(
-				135deg,
-				#a8916a 0%,
-				#5c4e38 20%,
-				#8c7756 38%,
-				#4a3f2e 55%,
-				#7c6a4d 74%,
-				#54472f 88%,
-				#9a8562 100%
-			);
-	}
-
-	.band-lip {
-		inset: calc(var(--band) - 1px);
-		border-radius: 69px;
-		background: #0d0b08;
+			var(--color-surface-neutral-container);
 	}
 
 	.bezel {
@@ -230,6 +317,40 @@ const extrusion = Array.from({ length: LAYERS }, (_, i) => ({
 		width: 100%;
 		border: 0;
 		background: var(--color-surface-neutral-bg);
+	}
+
+	/* Spinner in the middle of the screen until the prototype has loaded. It's
+	   part of the screen, so it tilts with the phone. */
+	.loader {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		width: 32px;
+		height: 32px;
+		margin: -16px 0 0 -16px;
+		border: 3px solid var(--color-border-default);
+		border-top-color: var(--color-text-secondary);
+		border-radius: 999px;
+		pointer-events: none;
+		animation: spin 800ms linear infinite;
+		transition: opacity 300ms ease-out;
+	}
+
+	.phone.loaded .loader {
+		opacity: 0;
+		animation-play-state: paused;
+	}
+
+	@keyframes spin {
+		to {
+			rotate: 1turn;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.loader {
+			animation-duration: 2400ms;
+		}
 	}
 
 	/* A faint reflection across the glass that fades out as the phone turns
@@ -266,15 +387,15 @@ const extrusion = Array.from({ length: LAYERS }, (_, i) => ({
 	.grille {
 		width: 64px;
 		height: 6px;
-		background: radial-gradient(circle, #1a150e 0 2px, transparent 2.5px) 0 0 / 10px 6px repeat-x;
+		background: radial-gradient(circle, #0f0e0d 0 2px, transparent 2.5px) 0 0 / 10px 6px repeat-x;
 	}
 
 	.port {
 		width: 34px;
 		height: 10px;
 		border-radius: 5px;
-		background: #120f0a;
-		box-shadow: inset 0 0 0 1.5px #3a3122;
+		background: #0b0a0a;
+		box-shadow: inset 0 0 0 1.5px #302e2c;
 	}
 
 	/* Pill-shaped buttons on the right side, centred in its depth. Each is
@@ -295,28 +416,22 @@ const extrusion = Array.from({ length: LAYERS }, (_, i) => ({
 		border-radius: 999px;
 	}
 
-	.groove {
-		margin: -1.5px;
-		background: #17130d;
-		transform: translateZ(0.1px);
-	}
-
-	/* The side button stands 2.5px proud: walls in shadowed gold, then a
-	   rounded cap lit across its width with a bright line down the middle */
+	/* The side button stands 2.5px proud in the frame's colour: walls, then
+	   a rounded cap lit across its width with a lighter line down the middle */
 	.side {
 		top: 29%;
 		height: 11.3%;
 	}
 
 	.side .wall {
-		background: #6e5c40;
+		background: var(--color-surface-neutral-container);
 	}
 
-	.side .wall:nth-child(2) {
+	.side .wall:nth-child(1) {
 		transform: translateZ(0.8px);
 	}
 
-	.side .wall:nth-child(3) {
+	.side .wall:nth-child(2) {
 		transform: translateZ(1.6px);
 	}
 
@@ -324,31 +439,22 @@ const extrusion = Array.from({ length: LAYERS }, (_, i) => ({
 		transform: translateZ(2.5px);
 		background: linear-gradient(
 			90deg,
-			#6e5c40 0%,
-			#b39d74 22%,
-			#e8d9b5 46%,
-			#c9b58e 58%,
-			#8f7a56 82%,
-			#5f4f37 100%
+			var(--color-surface-neutral-container) 0%,
+			var(--color-border-default) 46%,
+			var(--color-surface-neutral-container) 100%
 		);
 		box-shadow:
-			inset 0 1.5px 1px rgba(255, 246, 225, 0.45),
+			inset 0 1.5px 1px rgba(240, 234, 224, 0.12),
 			inset 0 -1.5px 1px rgba(0, 0, 0, 0.35);
 	}
 
-	/* Camera Control sits flush: a sapphire crystal inside a thin gold ring */
+	/* Camera Control sits flush: a dark sapphire crystal */
 	.camera-control {
 		top: 63%;
 		height: 5.7%;
 	}
 
-	.camera-control .groove {
-		margin: -1px;
-		background: linear-gradient(90deg, #8f7a56, #d6c39c 50%, #8f7a56);
-	}
-
 	.camera-control .cap {
-		inset: 1px;
 		transform: translateZ(0.3px);
 		background:
 			linear-gradient(
@@ -357,12 +463,31 @@ const extrusion = Array.from({ length: LAYERS }, (_, i) => ({
 				rgba(255, 255, 255, 0.04) 35%,
 				transparent 50%
 			),
-			linear-gradient(90deg, #1c1813, #2f2a22 50%, #16120d);
+			linear-gradient(90deg, #151413, #282624 50%, #100f0e);
 		box-shadow: inset 0 0 1.5px rgba(0, 0, 0, 0.8);
 	}
 </style>
 
 <script>
+	// The prototype is a whole app and loading it competes with the hero
+	// title's intro, so it only starts once the page announces the title's
+	// first line has played ('intro:line1' on window, and data-intro-line1 on
+	// <html> in case that came first), or after a few seconds regardless
+	const INTRO_TIMEOUT = 6000;
+	const loadPrototypes = () => {
+		for (const frame of document.querySelectorAll<HTMLIFrameElement>('.prototype iframe[data-src]')) {
+			// Hide the screen's spinner once the prototype itself has loaded
+			frame.addEventListener('load', () => frame.closest('.phone')?.classList.add('loaded'), {
+				once: true,
+			});
+			frame.src = frame.dataset.src!;
+			frame.removeAttribute('data-src');
+		}
+	};
+	if ('introLine1' in document.documentElement.dataset) loadPrototypes();
+	else window.addEventListener('intro:line1', loadPrototypes, { once: true });
+	setTimeout(loadPrototypes, INTRO_TIMEOUT);
+
 	import { getSvgPath } from 'figma-squircle';
 
 	// iOS continuous corners: Figma's corner smoothing at 60% matches them.
@@ -389,9 +514,9 @@ const extrusion = Array.from({ length: LAYERS }, (_, i) => ({
 	// The phone turns from tilted to face-on as it scrolls into place, and the
 	// two poses have different outlines. Measure both, scale the stage down if
 	// either is wider than the page, and centre it on the face-on pose where
-	// it comes to rest. The space above is set by the tilted pose it loads in,
-	// so the face-on phone rises a little into it as it straightens; below,
-	// there's room for both. Then work out how far the page scrolls before the
+	// it comes to rest. The space above is set by the tilted pose it loads in;
+	// as it straightens it moves down to keep its top edge there, and below
+	// there's room for wherever its bottom reaches. Then work out how far the page scrolls before the
 	// phone is centred on screen: that's where it lands.
 	const scrollTimelines = CSS.supports('animation-timeline: scroll()');
 	const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -404,12 +529,57 @@ const extrusion = Array.from({ length: LAYERS }, (_, i) => ({
 
 		let settle = 0;
 
+		// Where fit() put the stage, and how to write its transform: an extra
+		// translate first (zero at rest), so resting and demo transforms have
+		// the same shape and animate cleanly between each other
+		let rest = { shiftX: 0, scale: 1 };
+		const transformFor = (dx: number, dy: number, scale: number) =>
+			`translate(${dx}px, ${dy}px) translateX(${rest.shiftX}px) scale(${scale})`;
+
+		// Demo mode: the face-on phone, centred in the window, as big as fits
+		// with DEMO_MARGIN round it, up to DEMO_MAX_HEIGHT tall
+		const DEMO_MARGIN = 24;
+		const DEMO_MAX_HEIGHT = 820;
+		const DEMO_EASE = 'cubic-bezier(0.2, 0, 0, 1)';
+		const DEMO_MS = reducedMotion ? 0 : 600;
+		let demo = false;
+		let tiltAnimation: Animation | undefined;
+		let opener: HTMLElement | null = null;
+		const backdrop = container.querySelector<HTMLElement>('.demo-backdrop')!;
+		const closeButton = container.querySelector<HTMLButtonElement>('.demo-close')!;
+
+		const demoTransform = () => {
+			const width = stage.offsetWidth;
+			const height = stage.offsetHeight;
+			const scale = Math.min(
+				(window.innerHeight - 2 * DEMO_MARGIN) / height,
+				DEMO_MAX_HEIGHT / height,
+				(window.innerWidth - 2 * DEMO_MARGIN) / width,
+			);
+			// The stage's untransformed top left, worked back from where it is
+			// now: it scales by `a` about its top centre, then moves by (e, f)
+			const box = stage.getBoundingClientRect();
+			const now = new DOMMatrix(getComputedStyle(stage).transform);
+			const left = box.left - (width / 2) * (1 - now.a) - now.e;
+			const top = box.top - now.f;
+			// Then the transform that puts its middle in the window's middle
+			const dx = window.innerWidth / 2 - left - width / 2 - rest.shiftX;
+			// (face-on, the phone sits --drop lower in the stage)
+			const drop = parseFloat(scene.style.getPropertyValue('--drop')) || 0;
+			const dy = window.innerHeight / 2 - top - ((height / 2 + drop) * scale);
+			return transformFor(dx, dy, scale);
+		};
+
 		// Without scroll-driven animations, follow the scroll here instead,
-		// eased like the CSS curve: cubic-bezier(0.65, 0, 0.35, 1) is the
-		// standard ease-in-out cubic
-		const easeInOut = (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
+		// eased like the CSS curve: cubic-bezier(0.37, 0, 0.63, 1) is the
+		// standard ease-in-out sine
+		const easeInOut = (t: number) => -(Math.cos(Math.PI * t) - 1) / 2;
 		const track = () => {
-			const progress = settle > 0 ? Math.min(1, window.scrollY / settle) : 1;
+			// (over the same stretch as the CSS)
+			const start = settle * 0.1;
+			const end = settle * 1.5;
+			const progress =
+				settle > 0 ? Math.min(1, Math.max(0, (window.scrollY - start) / (end - start))) : 1;
 			scene.style.setProperty('--tilt', String(1 - easeInOut(progress)));
 		};
 		const fallback = !scrollTimelines && !reducedMotion;
@@ -437,8 +607,16 @@ const extrusion = Array.from({ length: LAYERS }, (_, i) => ({
 		};
 
 		const fit = () => {
-			// Measure both poses with the stage unscaled and the animation paused
+			// In the demo the phone just stays centred in the window; its resting
+			// place is worked out again once it's back
+			if (demo) {
+				stage.style.transform = demoTransform();
+				return;
+			}
+			// Measure both poses with the stage unscaled, the animation paused and
+			// the face-on pose's downward shift taken off
 			scene.style.animation = 'none';
+			scene.style.removeProperty('--drop');
 			stage.style.transform = '';
 			stage.style.margin = '';
 			const layout = stage.getBoundingClientRect();
@@ -456,11 +634,16 @@ const extrusion = Array.from({ length: LAYERS }, (_, i) => ({
 			);
 			const scale = Math.min(1, container.clientWidth / (2 * halfWidth));
 			const shiftX = (layout.left + layout.width / 2 - centreX) * scale;
-			stage.style.transform = `translateX(${shiftX}px) scale(${scale})`;
+			rest = { shiftX, scale };
+			stage.style.transform = transformFor(0, 0, scale);
 
 			// Reserve from the top of the tilted pose to the lowest edge of either
+			// Face-on, the phone is moved down to line its top up with the tilted
+			// pose's, which takes its bottom lower too
+			const drop = Math.max(0, tilted.top - flat.top);
+			scene.style.setProperty('--drop', `${drop}px`);
 			const top = tilted.top;
-			const bottom = Math.max(tilted.bottom, flat.bottom);
+			const bottom = Math.max(tilted.bottom, flat.bottom + drop);
 			const marginTop = (layout.top - top) * scale;
 			const reserved = (bottom - top) * scale;
 			stage.style.margin = `${marginTop}px 0 ${reserved - layout.height - marginTop}px`;
@@ -473,6 +656,94 @@ const extrusion = Array.from({ length: LAYERS }, (_, i) => ({
 			scene.style.setProperty('--settle', `${settle}px`);
 			if (fallback) track();
 		};
+
+		// Open: lift the page's hero above the nav, fade in the backdrop, and
+		// glide the phone to the middle while it turns face-on. Its tilt is
+		// normally driven by the scroll; here it's taken over from wherever it
+		// is now.
+		const openDemo = (trigger: HTMLElement | null) => {
+			if (demo) return;
+			demo = true;
+			opener = trigger;
+			const tilt = parseFloat(getComputedStyle(scene).getPropertyValue('--tilt')) || 0;
+			// demo-open lasts until the phone is back; demo-active only while the
+			// demo is open, for things that should return as it starts closing
+			document.documentElement.classList.add('demo-open', 'demo-active');
+			container.classList.add('is-demo');
+			scene.style.animation = 'none';
+			tiltAnimation = scene.animate([{ '--tilt': tilt }, { '--tilt': 0 }], {
+				duration: DEMO_MS,
+				easing: DEMO_EASE,
+				fill: 'forwards',
+			});
+			stage.style.transition = `transform ${DEMO_MS}ms ${DEMO_EASE}`;
+			stage.style.transform = demoTransform();
+			closeButton.tabIndex = 0;
+			closeButton.focus({ preventScroll: true });
+			// While open the phone is the app, not a button
+			device.removeAttribute('role');
+			device.removeAttribute('aria-label');
+			device.tabIndex = -1;
+		};
+
+		// Close: the same in reverse, then hand the tilt back to the scroll
+		const closeDemo = () => {
+			if (!demo) return;
+			demo = false;
+			container.classList.remove('is-demo');
+			document.documentElement.classList.remove('demo-active');
+			stage.style.transform = transformFor(0, 0, rest.scale);
+			const animation = tiltAnimation;
+			animation?.reverse();
+			// Let the page scroll again and hand the tilt back to the scroll
+			// first, and only drop the closing animation (which holds the tilt
+			// where it ended) a couple of frames later. While the page can't
+			// scroll the scroll-driven tilt has no value, so dropping it sooner
+			// shows the fully tilted default for a frame.
+			const done = () => {
+				if (demo) return;
+				document.documentElement.classList.remove('demo-open');
+				scene.style.animation = '';
+				stage.style.transition = '';
+				requestAnimationFrame(() =>
+					requestAnimationFrame(() => {
+						if (!demo) animation?.cancel();
+					}),
+				);
+			};
+			if (animation) animation.finished.then(done, done);
+			else done();
+			closeButton.tabIndex = -1;
+			device.setAttribute('role', 'button');
+			device.setAttribute('aria-label', 'Try the demo');
+			device.tabIndex = 0;
+			opener?.focus({ preventScroll: true });
+		};
+
+		// The phone itself opens the demo too, by click or keyboard
+		device.tabIndex = 0;
+		device.setAttribute('role', 'button');
+		device.setAttribute('aria-label', 'Try the demo');
+		device.addEventListener('click', () => {
+			if (!demo) openDemo(device);
+		});
+		device.addEventListener('keydown', (event) => {
+			if (demo || (event.key !== 'Enter' && event.key !== ' ')) return;
+			event.preventDefault();
+			openDemo(device);
+		});
+
+		for (const trigger of document.querySelectorAll<HTMLElement>('[data-demo]')) {
+			trigger.addEventListener('click', (event) => {
+				event.preventDefault();
+				openDemo(trigger);
+			});
+		}
+		closeButton.addEventListener('click', closeDemo);
+		backdrop.addEventListener('click', closeDemo);
+		window.addEventListener('keydown', (event) => {
+			if (event.key === 'Escape') closeDemo();
+		});
 
 		new ResizeObserver(fit).observe(container);
 		window.addEventListener('resize', fit);

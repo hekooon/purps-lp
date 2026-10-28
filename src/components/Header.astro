@@ -1,5 +1,15 @@
 ---
 import logo from '../assets/purps-logo.svg?raw';
+import tiktok from '../assets/socials/tiktok.svg?raw';
+import instagram from '../assets/socials/instagram.svg?raw';
+import x from '../assets/socials/x.svg?raw';
+
+// Social profiles, in the order they appear. Links are placeholders.
+const socials = [
+	{ name: 'X', icon: x, href: '#' },
+	{ name: 'TikTok', icon: tiktok, href: '#' },
+	{ name: 'Instagram', icon: instagram, href: '#' },
+];
 
 // Stacked backdrop blurs, strongest at the top. Each layer is masked to fade
 // out further up than the one before, so the blur eases off towards the
@@ -25,22 +35,45 @@ const blurs = BLURS.map((radius, i) => ({
 	<div class="bar">
 		<a class="logo" href="/" aria-label="Purps home" set:html={logo} />
 		<nav>
-			<a class="link" href="#">Guides</a>
-			<a class="link" href="#">Support</a>
-			<a class="download" href="#">Download</a>
+			<ul class="socials">
+				{
+					socials.map(({ name, icon, href }) => (
+						<li>
+							<a class="social" {href} aria-label={name} set:html={icon} />
+						</li>
+					))
+				}
+			</ul>
+			<a class="download" href="#" data-download>Download</a>
 		</nav>
 	</div>
 </header>
 
 <style>
+	/* Always on top of everything, the demo included (its hero sits at 20) */
 	.header {
 		position: sticky;
 		top: 0;
-		z-index: 10;
+		z-index: 30;
 		display: flex;
 		align-items: center;
-		height: 80px;
+		height: 96px;
+		/* Same page margin as main, so the bar lines up with the sections */
 		padding: 0 16px;
+		transition: translate 600ms cubic-bezier(0.2, 0, 0, 1);
+	}
+
+	/* While the demo is open it slides up out of view, along with the soft
+	   edge of its backdrop that hangs below it, and comes back as soon as the
+	   demo starts closing */
+	:global(html.demo-active) .header {
+		translate: 0 calc(-100% - 32px);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.header {
+			transition: none;
+		}
 	}
 
 	/* Runs past the bar for the soft edge; the bg tint fades out with it */
@@ -48,10 +81,11 @@ const blurs = BLURS.map((radius, i) => ({
 		position: absolute;
 		inset: 0 0 -32px;
 		pointer-events: none;
+		/* Solid-ish over the top quarter, then fading out over the rest */
 		background: linear-gradient(
 			to bottom,
-			color-mix(in srgb, var(--color-surface-neutral-bg) 95%, transparent),
-			color-mix(in srgb, var(--color-surface-neutral-bg) 75%, transparent) 60%,
+			color-mix(in srgb, var(--color-surface-neutral-bg) 95%, transparent) 25%,
+			color-mix(in srgb, var(--color-surface-neutral-bg) 75%, transparent) 70%,
 			transparent
 		);
 	}
@@ -74,8 +108,10 @@ const blurs = BLURS.map((radius, i) => ({
 		align-items: center;
 		justify-content: space-between;
 		flex: 1;
-		max-width: 1028px;
+		max-width: var(--layout-max-width);
 		margin: 0 auto;
+		/* Inset like the cards' content, so the logo lines up with their text */
+		padding: 0 var(--layout-padding);
 	}
 
 	.logo {
@@ -86,7 +122,7 @@ const blurs = BLURS.map((radius, i) => ({
 	.logo :global(svg) {
 		display: block;
 		width: auto;
-		height: 22px;
+		height: 24px;
 	}
 
 	nav {
@@ -95,23 +131,36 @@ const blurs = BLURS.map((radius, i) => ({
 		gap: 32px;
 	}
 
-	.link,
+	/* 24px icons, spaced as in the Figma frame */
+	.socials {
+		display: flex;
+		align-items: center;
+		gap: 24px;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.social {
+		display: block;
+		color: var(--color-text-secondary);
+	}
+
+	.social:hover {
+		color: var(--color-text-primary);
+	}
+
+	.social :global(svg) {
+		display: block;
+		width: 24px;
+		height: 24px;
+	}
+
 	.download {
 		font: 700 14px / 20px var(--font-sans);
 		font-feature-settings: 'lnum' 1, 'tnum' 1;
 		text-decoration: none;
 		white-space: nowrap;
-	}
-
-	.link {
-		color: var(--color-text-secondary);
-	}
-
-	.link:hover {
-		color: var(--color-text-primary);
-	}
-
-	.download {
 		display: flex;
 		align-items: center;
 		height: 40px;
@@ -121,9 +170,14 @@ const blurs = BLURS.map((radius, i) => ({
 		color: var(--color-text-on-color);
 	}
 
+	.download:hover {
+		background: var(--color-button-primary-hover);
+	}
+
 	@media (max-width: 420px) {
-		nav {
-			gap: 20px;
+		nav,
+		.socials {
+			gap: 16px;
 		}
 	}
 </style>

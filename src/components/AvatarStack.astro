@@ -1,0 +1,142 @@
+---
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+// Overlapping round images, optionally with a count at the end ("+62"),
+// sized in em so it scales with the text it sits in. Purely decorative; the
+// sentence reads without it.
+//
+// On load the words around it sit one space apart, as if it weren't there.
+// Then it fades in and fans out from one spot at the same time, opening a
+// gap that pushes the words apart. `delay` (ms) is when it
+// starts, so it can take its turn among the words around it.
+interface Props {
+	images: ImageMetadata[];
+	more?: string;
+	delay?: number;
+}
+
+const { images, more, delay = 0 } = Astro.props;
+const count = images.length + (more ? 1 : 0);
+---
+
+<span class="avatar-stack" aria-hidden="true" style={`--count: ${count}; --delay: ${delay}ms`}>
+	{
+		images.map((src, i) => (
+			<span class="avatar" style={`--i: ${i}`}>
+				<Image {src} alt="" width={96} height={96} />
+			</span>
+		))
+	}
+	{more && <span class="avatar more" style={`--i: ${images.length}`}>{more}</span>}
+</span>
+
+<style>
+	/* Registered as a length so it's worked out in px on the stack and passed
+	   down as that, rather than each child resolving the em against its own
+	   font size (the "+12" uses a much smaller one) */
+	@property --avatar-size {
+		syntax: '<length>';
+		inherits: true;
+		initial-value: 50px;
+	}
+
+	/* 50px avatars at a 72px title (about 44px at today's 64px), each
+	   overlapping the last by 22/48 of their size, with a ring of 1/16 of it
+	   in the background colour to separate them (the Figma frame's 32px
+	   stack, scaled up) */
+	.avatar-stack {
+		--avatar-size: calc(50em / 72);
+
+		display: inline-flex;
+		align-items: center;
+		/* No margin: the plain spaces either side give it the same gap as
+		   between the words */
+		/* Centred on the lowercase letters around it */
+		vertical-align: middle;
+		letter-spacing: normal;
+	}
+
+	.avatar {
+		position: relative;
+		display: grid;
+		place-items: center;
+		flex: none;
+		width: var(--avatar-size);
+		height: var(--avatar-size);
+		overflow: hidden;
+		/* The separating ring is centred on the circle's edge, like a centre
+		   stroke in Figma. It's one outline pulled in by half its width, so
+		   there's a single edge (a border plus a shadow left a hairline seam
+		   between them). */
+		border-radius: 999px;
+		outline: calc(var(--avatar-size) / 16) solid var(--color-surface-neutral-bg);
+		outline-offset: calc(var(--avatar-size) / -32);
+	}
+
+	.avatar + .avatar {
+		margin-left: calc(var(--avatar-size) * -22 / 48);
+	}
+
+	/* Intro. The stack's width is set outright so it can animate from
+	   nothing to full as the avatars fan out, staying centred in it. --step
+	   is the distance between neighbouring avatars; each starts that many
+	   steps from the middle. */
+	.avatar-stack {
+		--step: calc(var(--avatar-size) * 26 / 48);
+		--width: calc(var(--avatar-size) + (var(--count) - 1) * var(--step));
+
+		justify-content: center;
+		width: var(--width);
+		animation:
+			stack-fade 400ms ease-out var(--delay) both,
+			stack-open 600ms cubic-bezier(0.2, 0, 0, 1) var(--delay) both;
+	}
+
+	.avatar {
+		animation: stack-spread 600ms cubic-bezier(0.2, 0, 0, 1) var(--delay) both;
+	}
+
+	@keyframes stack-fade {
+		from {
+			opacity: 0;
+		}
+	}
+
+	/* Starts with no width or margin, and pulls in by one space (0.17em in
+	   this font, letter spacing included) so the words either side sit a
+	   single space apart */
+	@keyframes stack-open {
+		from {
+			width: 0;
+			margin: 0 -0.17em 0 0;
+		}
+	}
+
+	@keyframes stack-spread {
+		from {
+			translate: calc(((var(--count) - 1) / 2 - var(--i)) * var(--step)) 0;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.avatar-stack,
+		.avatar {
+			animation: none;
+		}
+	}
+
+	.avatar img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	/* Same #2e2d2c as the border colour, as in the Figma frame */
+	.more {
+		background: var(--color-border-default);
+		color: var(--color-text-secondary);
+		font: 700 calc(var(--avatar-size) * 0.28) / 1 var(--font-sans);
+		font-feature-settings: 'lnum' 1, 'tnum' 1;
+	}
+</style>

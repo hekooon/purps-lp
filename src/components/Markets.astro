@@ -1,0 +1,342 @@
+---
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import { markets } from '../data/markets';
+import moneyBall from '../assets/money-ball-lit.webp';
+
+// Every market Purps lists, as icons on three rings orbiting the money ball
+// like planets, the inner ones faster, under a title. Hovering (or focusing)
+// an icon shows its ticker and name. Icons come from src/assets/markets/,
+// matched by id.
+const icons = import.meta.glob<{ default: ImageMetadata }>('../assets/markets/*.png', {
+	eager: true,
+});
+const iconFor = (id: string) => icons[`../assets/markets/${id}.png`]?.default;
+
+// Icon size on each ring, inner to outer, and the gap kept everywhere: between
+// neighbours on a ring and between one ring and the next. In design units;
+// the whole thing scales with the section's width.
+const SIZES = [48, 64, 80];
+const GAP = 40;
+
+// How many fit on a ring of radius r with that gap
+const fit = (r: number, size: number) => Math.round((2 * Math.PI * r) / (size + GAP));
+// Each ring sits a gap outside the last; the inner one is as small as it can
+// be while all the markets still fit on the three
+const layout = (inner: number) => {
+	const radii = [(inner * (SIZES[0] + GAP)) / (2 * Math.PI)];
+	for (let i = 1; i < SIZES.length; i++) {
+		radii.push(radii[i - 1] + (SIZES[i - 1] + SIZES[i]) / 2 + GAP);
+	}
+	const counts = radii.map((r, i) => (i === 0 ? inner : fit(r, SIZES[i])));
+	return { radii, counts };
+};
+let inner = 1;
+while (layout(inner).counts.reduce((a, b) => a + b) < markets.length) inner++;
+const { radii, counts } = layout(inner);
+// The last ring takes whatever's left over, so none is missed or doubled
+counts[counts.length - 1] = markets.length - counts.slice(0, -1).reduce((a, b) => a + b, 0);
+
+const outer = radii.length - 1;
+const DIAMETER = 2 * radii[outer] + SIZES[outer];
+// The money ball in the middle, at 75% of the room inside the inner ring (a
+// gap in from its icons)
+const BALL = 0.75 * 2 * (radii[0] - SIZES[0] / 2 - GAP);
+
+// Seconds per lap for each ring, inner to outer: like planets, the further
+// out, the slower
+const PERIODS = [80, 180, 400];
+
+// Outer ring first, so the best-known markets get the biggest icons
+const rings = [...radii.keys()].reverse().map((ring) => {
+	const start = counts.slice(ring + 1).reduce((a, b) => a + b, 0);
+	const items = markets.slice(start, start + counts[ring]);
+	return {
+		style: `--radius: ${radii[ring]}; --icon: ${SIZES[ring]}; --period: ${PERIODS[ring]}s`,
+		items: items.map((market, i) => ({ ...market, angle: (360 * i) / items.length })),
+	};
+});
+---
+
+<section class="markets">
+	<h2>The market never sleeps.<br />24/7 accessible from your pocket.</h2>
+
+	<div class="rings" style={`--diameter: ${DIAMETER}; --ball: ${BALL}`}>
+		<div class="orbits">
+			{
+				rings.map(({ style, items }) => (
+					<div class="band">
+						<ul class="ring" {style}>
+							{items.map(({ id, ticker, name, angle }) => {
+								const icon = iconFor(id);
+								return (
+									<li
+										class="coin"
+										style={`--angle: ${angle}deg`}
+										tabindex="0"
+										aria-label={`${ticker}, ${name}`}
+										data-ticker={ticker}
+										data-name={name}
+									>
+										{icon && <Image src={icon} alt="" width={160} height={160} />}
+									</li>
+								);
+							})}
+						</ul>
+					</div>
+				))
+			}
+		</div>
+		<div class="ball" aria-hidden="true">
+			<Image src={moneyBall} alt="" width={2000} />
+		</div>
+		<div class="tooltip" role="tooltip" aria-hidden="true">
+			<span class="ticker"></span>
+			<span class="name"></span>
+		</div>
+	</div>
+</section>
+
+<style>
+	.markets {
+		max-width: var(--layout-max-width);
+		margin: 160px auto 0;
+		padding: var(--layout-padding);
+	}
+
+	h2 {
+		max-width: 880px;
+		margin: 0 auto 48px;
+		font-size: clamp(32px, 5.5vw, 56px);
+		line-height: 1;
+		letter-spacing: -0.02em;
+		text-align: center;
+	}
+
+	/* A square as wide as the section; --u is one design unit at this width.
+	   Tipped back, the orbits leave the top 13% or so of it empty, so it's
+	   pulled up under the title by 12% of its width. */
+	.rings {
+		position: relative;
+		container-type: inline-size;
+		aspect-ratio: 1;
+		max-width: 1024px;
+		margin: -12% auto 0;
+	}
+
+	.rings > * {
+		--u: calc(100cqw / var(--diameter));
+	}
+
+	/* One 3D space for the orbits */
+	.orbits {
+		position: absolute;
+		inset: 0;
+		perspective: 1600px;
+		transform-style: preserve-3d;
+		pointer-events: none;
+	}
+
+	/* The ball sits over the rings (under the nav). Its image has a glow and
+	   shadow round the ball, which spans about 900 of its 2000px, centred on
+	   1005, 993, so it's scaled and shifted to put the ball itself --ball
+	   units across, dead centre; the glow and shadow spill out around it. */
+	.ball {
+		position: absolute;
+		z-index: 1;
+		top: 50%;
+		left: 50%;
+		width: calc(var(--ball) * var(--u));
+		aspect-ratio: 1;
+		translate: -50% -50%;
+		pointer-events: none;
+	}
+
+	.ball img {
+		position: absolute;
+		top: calc(50% - 993 / 900 * 100%);
+		left: calc(50% - 1005 / 900 * 100%);
+		width: calc(2000 / 900 * 100%);
+		max-width: none;
+		height: auto;
+	}
+
+	/* Each ring is an orbit round the ball, like planets round the sun: a
+	   fixed plane, the same for all three, tipped back by --incline and
+	   turned by --roll. The ring turns within it, carrying its icons round. */
+	.band {
+		--incline: 35deg;
+		--roll: 15deg;
+		position: absolute;
+		inset: 0;
+		transform: rotate(var(--roll)) rotateX(var(--incline));
+		transform-style: preserve-3d;
+	}
+
+	.ring {
+		transform-style: preserve-3d;
+		position: absolute;
+		inset: 0;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		/* The rings lie on top of each other; only their icons take the pointer */
+		pointer-events: none;
+		animation-name: turn;
+		animation-duration: var(--period);
+		animation-timing-function: linear;
+		animation-iteration-count: infinite;
+	}
+
+	@keyframes turn {
+		to {
+			rotate: 360deg;
+		}
+	}
+
+	@keyframes turn-back {
+		to {
+			rotate: -360deg;
+		}
+	}
+
+	/* Out from the centre along its angle */
+	.coin {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		width: calc(var(--icon) * var(--u));
+		aspect-ratio: 1;
+		translate: -50% -50%;
+		transform: rotate(var(--angle)) translateY(calc(var(--radius) * var(--u) * -1));
+		border-radius: 999px;
+		outline: none;
+		pointer-events: auto;
+		transform-style: preserve-3d;
+	}
+
+	/* Each icon lies flat in its orbit, tilted with it, and stays upright as
+	   it goes round: it undoes its ring's turning (turn-back, in step with
+	   turn) and its place on the ring */
+	.coin :global(img) {
+		display: block;
+		width: 100%;
+		height: auto;
+		border-radius: 999px;
+		/* Fills in behind icons with see-through parts */
+		background: var(--color-surface-neutral-bg);
+		transform: rotate(calc(-1 * var(--angle)));
+		animation-name: turn-back;
+		animation-duration: var(--period);
+		animation-timing-function: linear;
+		animation-iteration-count: infinite;
+		transition:
+			scale 300ms cubic-bezier(0.16, 1, 0.3, 1),
+			filter 300ms ease-out;
+	}
+
+	/* The hovered icon grows by --hover-scale; every other one blurs */
+	.rings {
+		--hover-scale: 1.25;
+	}
+
+	.coin:is(:hover, :focus-visible) :global(img) {
+		scale: var(--hover-scale);
+	}
+
+	.rings:has(.coin:is(:hover, :focus-visible)) .coin:not(:hover, :focus-visible) :global(img) {
+		filter: blur(4px);
+	}
+
+	.coin:focus-visible {
+		outline: 2px solid var(--color-text-primary);
+		outline-offset: 2px;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.ring,
+		.coin :global(img) {
+			animation: none;
+		}
+	}
+
+	/* One tooltip for them all, placed over whichever icon is hovered */
+	.tooltip {
+		position: absolute;
+		top: 0;
+		left: 0;
+		z-index: 2;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 8px 12px;
+		border-radius: 12px;
+		background: var(--color-surface-neutral-container);
+		white-space: nowrap;
+		pointer-events: none;
+		opacity: 0;
+		translate: -50% calc(-100% - 8px);
+		transition: opacity 150ms ease-out;
+	}
+
+	.tooltip.is-visible {
+		opacity: 1;
+	}
+
+	.ticker {
+		color: var(--color-text-primary);
+		font: 700 15px / 20px var(--font-sans);
+	}
+
+	.name {
+		color: var(--color-text-secondary);
+		font: 500 13px / 18px var(--font-sans);
+	}
+</style>
+
+<script>
+	for (const rings of document.querySelectorAll<HTMLElement>('.markets .rings')) {
+		const tooltip = rings.querySelector<HTMLElement>('.tooltip');
+		if (!tooltip) continue;
+		const ticker = tooltip.querySelector('.ticker')!;
+		const name = tooltip.querySelector('.name')!;
+
+		// The rings keep turning while hovered, so the tooltip follows its icon
+		// every frame until it's hidden
+		let current: HTMLElement | null = null;
+		let frame = 0;
+		const place = () => {
+			if (!current) return;
+			const img = current.querySelector('img') ?? current;
+			// Above the icon at its grown size, which it may still be on its way to
+			const grow = parseFloat(getComputedStyle(rings).getPropertyValue('--hover-scale')) || 1;
+			const scale = parseFloat(getComputedStyle(img).scale) || 1;
+			const box = rings.getBoundingClientRect();
+			const r = img.getBoundingClientRect();
+			const centreY = r.top + r.height / 2;
+			tooltip.style.left = `${r.left + r.width / 2 - box.left}px`;
+			tooltip.style.top = `${centreY - (r.height / 2 / scale) * grow - box.top}px`;
+			frame = requestAnimationFrame(place);
+		};
+		const show = (coin: HTMLElement) => {
+			ticker.textContent = coin.dataset.ticker ?? '';
+			name.textContent = coin.dataset.name ?? '';
+			current = coin;
+			cancelAnimationFrame(frame);
+			place();
+			tooltip.classList.add('is-visible');
+		};
+		const hide = () => {
+			current = null;
+			cancelAnimationFrame(frame);
+			tooltip.classList.remove('is-visible');
+		};
+
+		for (const coin of rings.querySelectorAll<HTMLElement>('.coin')) {
+			coin.addEventListener('pointerenter', () => show(coin));
+			coin.addEventListener('pointerleave', hide);
+			coin.addEventListener('focus', () => show(coin));
+			coin.addEventListener('blur', hide);
+		}
+	}
+</script>

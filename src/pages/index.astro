@@ -1,11 +1,47 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
-import Floaters from '../components/Floaters.astro';
+// Scatter on trial; HeroRings.astro is the two-ring version to revert to
+import Floaters from '../components/HeroScatter.astro';
+import AvatarStack from '../components/AvatarStack.astro';
+import Word from '../components/Word.astro';
+import btc from '../assets/markets/btc.png';
+import tsla from '../assets/markets/tsla.png';
+import googl from '../assets/markets/googl.png';
+import kpepe from '../assets/markets/kpepe.png';
+import trader1 from '../assets/avatars/trader-1.webp';
+import trader2 from '../assets/avatars/trader-2.webp';
+import trader3 from '../assets/avatars/trader-3.webp';
+import trader5 from '../assets/avatars/trader-5.webp';
 import ValueProps from '../components/ValueProps.astro';
+import Markets from '../components/Markets.astro';
 import Footer from '../components/Footer.astro';
+import DownloadModal from '../components/DownloadModal.astro';
 // 3D frame on trial; PrototypeFrame.astro is the 2D version to revert to
 import PrototypeFrame from '../components/PrototypeFrame3D.astro';
+
+// The title fades in a line at a time: its letters one after another, STEP
+// ms apart, then after a PAUSE its stack, which fades in and fans out. The
+// second line starts LINE_GAP after the first line's stack does; the first
+// after START.
+const START = 200;
+const STEP = 35;
+const PAUSE = 200;
+const LINE_GAP = 300;
+
+const line = (start: number, words: string[]) => {
+	let order = 0;
+	return words.map((word) => [...word].map((char) => ({ char, delay: start + STEP * order++ })));
+};
+const lastLetter = (letters: { delay: number }[][]) => letters.at(-1)!.at(-1)!.delay;
+
+const line1 = line(START, ['See', 'what’s', 'moving.']);
+const stack1 = lastLetter(line1) + PAUSE;
+const line2 = line(stack1 + LINE_GAP, ['Follow', 'who’s', 'winning.']);
+const stack2 = lastLetter(line2) + PAUSE;
+// The subheading follows, all at once, once the second stack is under way
+const SUBTITLE_GAP = 300;
+const subtitle = stack2 + SUBTITLE_GAP;
 ---
 
 <Layout title="Hello">
@@ -13,11 +49,23 @@ import PrototypeFrame from '../components/PrototypeFrame3D.astro';
 	<main>
 		<section class="hero">
 			<Floaters />
-			<h1 class="text-hero" data-floaters-avoid>
-				<span>Trade what’s moving.</span>
-				<span>Follow who’s winning.</span>
+			<h1 class="text-hero" data-floaters-avoid aria-label="See what’s moving. Follow who’s winning.">
+				<!-- Spaces written out with {' '}: Astro drops the line breaks between tags.
+				     Each letter is its own span so it can fade in on its own. -->
+				<span>
+					<Word letters={line1[0]} />{' '}
+					<Word letters={line1[1]} />{' '}
+					<AvatarStack images={[btc, tsla, googl, kpepe]} delay={stack1} />{' '}
+					<Word letters={line1[2]} />
+				</span>
+				<span>
+					<Word letters={line2[0]} />{' '}
+					<Word letters={line2[1]} />{' '}
+					<AvatarStack images={[trader1, trader2, trader5, trader3]} delay={stack2} />{' '}
+					<Word letters={line2[2]} />
+				</span>
 			</h1>
-			<p class="subtitle text-subtitle" data-floaters-avoid>
+			<p class="subtitle text-subtitle" data-floaters-avoid style={`--delay: ${subtitle}ms`}>
 				Live prices, funding and liquidity across Nado markets, 24/7, with the people who
 				follow them.
 			</p>
@@ -25,12 +73,17 @@ import PrototypeFrame from '../components/PrototypeFrame3D.astro';
 				src="/prototypes/trade-entry/index.html"
 				title="Purps trade entry prototype"
 			/>
-			<a class="download" href="#">Download the app</a>
+			<div class="actions">
+				<a class="download" href="#" data-download>Download</a>
+				<a class="demo" href="#" data-demo>Try demo</a>
+			</div>
 		</section>
 
 		<ValueProps />
+		<Markets />
 	</main>
 	<Footer />
+	<DownloadModal />
 </Layout>
 
 <style>
@@ -41,7 +94,7 @@ import PrototypeFrame from '../components/PrototypeFrame3D.astro';
 	}
 
 	section {
-		max-width: 1028px;
+		max-width: var(--layout-max-width);
 		margin: 0 auto;
 	}
 
@@ -52,7 +105,7 @@ import PrototypeFrame from '../components/PrototypeFrame3D.astro';
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		padding-top: 128px;
+		padding-top: 112px;
 		text-align: center;
 	}
 
@@ -60,28 +113,89 @@ import PrototypeFrame from '../components/PrototypeFrame3D.astro';
 		margin: 0;
 	}
 
-	h1 span {
+	h1 > span {
 		display: block;
 	}
 
+
+	/* Fades in out of a blur after the title, all at once. No movement, so
+	   the rings behind measure where it ends up. */
 	.subtitle {
 		max-width: 560px;
-		margin: 24px 0 112px;
+		margin-top: 24px;
+		margin-bottom: 112px;
 		color: var(--color-text-secondary);
+		/* A step up from the shared subtitle style (the cards keep it) */
+		font-size: clamp(17px, 4.1vw, 24px);
+		font-weight: 500;
+		animation: subtitle-in 700ms cubic-bezier(0.16, 1, 0.3, 1) var(--delay) both;
+	}
+
+	@keyframes subtitle-in {
+		from {
+			opacity: 0;
+			filter: blur(8px);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.subtitle {
+			animation: none;
+		}
 	}
 
 	/* The nav's Download button, scaled up */
-	.download {
+	.actions {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 12px;
+		margin-top: 64px;
+	}
+
+	/* Pills: Download is the primary one, Try demo the secondary */
+	.download,
+	.demo {
 		display: flex;
 		align-items: center;
 		height: 64px;
-		margin-top: 64px;
 		padding: 0 40px;
 		border-radius: 999px;
 		background: var(--color-text-primary);
 		color: var(--color-text-on-color);
-		font: 700 20px / 24px var(--font-sans);
+		font: 700 17px / 24px var(--font-sans);
 		font-feature-settings: 'lnum' 1, 'tnum' 1;
 		text-decoration: none;
 	}
+
+	.demo {
+		background: var(--color-surface-neutral-container);
+		color: var(--color-text-primary);
+	}
+
+	.download:hover {
+		background: var(--color-button-primary-hover);
+	}
+
+	.demo:hover {
+		background: var(--color-button-secondary-hover);
+	}
+
+	/* While the demo is open the hero sits above the sticky nav, so the
+	   phone and its backdrop cover the whole window */
+	:global(html.demo-open) .hero {
+		z-index: 20;
+	}
 </style>
+
+<script>
+	// Tell the rest of the page once the title's first line has finished
+	// playing (straight away if it has no animations, as with reduced
+	// motion), so heavier things like the prototype can start loading
+	// without competing with the busiest part of the intro
+	const firstLine = document.querySelector('.hero h1 > span')?.getAnimations({ subtree: true }) ?? [];
+	Promise.all(firstLine.map((animation) => animation.finished)).then(() => {
+		document.documentElement.dataset.introLine1 = '';
+		window.dispatchEvent(new Event('intro:line1'));
+	});
+</script>

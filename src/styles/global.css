@@ -6,6 +6,53 @@
   box-sizing: border-box;
 }
 
+/* Layout: how wide the sections and nav get, and the inset inside the nav
+   and the cards. Halved on phones. */
+:root {
+  --layout-max-width: 1120px;
+  --layout-padding: 48px;
+}
+
+@media (max-width: 600px) {
+  :root {
+    --layout-padding: 24px;
+  }
+}
+
+/* Paused until the layout's script says the page is ready (see Layout.astro);
+   an animation's delay only counts down while it's running */
+html.intro-wait .word,
+html.intro-wait .letter,
+html.intro-wait .avatar-stack,
+html.intro-wait .avatar,
+html.intro-wait .subtitle {
+  animation-play-state: paused;
+}
+
+/* Hover colours for buttons. Primary (light) ones darken slightly towards
+   the background; secondary ones on the container colour lift to the next
+   grey up. Each button sets them in its own :hover rule. */
+:root {
+  --color-button-primary-hover: color-mix(
+    in srgb,
+    var(--color-text-primary),
+    var(--color-surface-neutral-bg) 12%
+  );
+  --color-button-secondary-hover: var(--color-border-default);
+}
+
+/* Every button presses in a little and eases its hover colour: the pills
+   (Download, Try demo, the store buttons) and the close buttons */
+:where(.download, .demo, .store, .close, .demo-close) {
+  transition:
+    scale 100ms ease-out,
+    background-color 150ms ease-out;
+}
+
+:where(.download, .demo, .store, .close, .demo-close):active {
+  scale: 0.97;
+}
+
 body {
   margin: 0;
   min-height: 100vh;

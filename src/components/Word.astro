@@ -1,0 +1,56 @@
+---
+// A word whose letters fade in one at a time, each at its own delay (ms),
+// while the word as a whole rises into place. The word never breaks across
+// lines.
+interface Props {
+	letters: { char: string; delay: number }[];
+}
+
+const { letters } = Astro.props;
+
+// How long one letter takes; the word's rise runs from its first letter
+// until its last has settled
+const LETTER = 550;
+const rise = letters.at(-1)!.delay - letters[0].delay + LETTER;
+---
+
+<span class="word" style={`--delay: ${letters[0].delay}ms; --rise: ${rise}ms`}>
+	{letters.map(({ char, delay }) => <span class="letter" style={`--delay: ${delay}ms`}>{char}</span>)}
+</span>
+
+<style>
+	/* The word rises with a transform, which the GPU handles. Moving each
+	   letter instead would mean either relaying out the line every frame or
+	   making the letters inline-blocks, which loses the font's kerning. */
+	.word {
+		display: inline-block;
+		white-space: nowrap;
+		animation: word-rise var(--rise) cubic-bezier(0.16, 1, 0.3, 1) var(--delay) both;
+	}
+
+	/* Each letter comes up out of a blur, snapping in and settling long (an
+	   ease-out expo) */
+	.letter {
+		animation: letter-in 550ms cubic-bezier(0.16, 1, 0.3, 1) var(--delay) both;
+	}
+
+	@keyframes word-rise {
+		from {
+			transform: translateY(0.15em);
+		}
+	}
+
+	@keyframes letter-in {
+		from {
+			opacity: 0;
+			filter: blur(8px);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.word,
+		.letter {
+			animation: none;
+		}
+	}
+</style>

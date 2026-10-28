@@ -14,6 +14,16 @@ const { title } = Astro.props;
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="generator" content={Astro.generator} />
 		<title>{title}</title>
+		<!-- Hold the title's intro until its font has loaded (or a second has
+		     passed), so it doesn't start while the page is still busy or
+		     swap fonts halfway through. Without JavaScript nothing waits. -->
+		<script is:inline>
+			const root = document.documentElement;
+			root.classList.add('intro-wait');
+			const start = () => requestAnimationFrame(() => root.classList.remove('intro-wait'));
+			document.fonts.ready.then(start);
+			setTimeout(start, 1000);
+		</script>
 	</head>
 	<body>
 		<slot />
