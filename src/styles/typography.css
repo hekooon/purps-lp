@@ -7,14 +7,14 @@
   --text-hero-weight: 700;
   --text-hero-size: clamp(36px, 9.5vw, 80px);
   --text-hero-line-height: 1;
-  --text-hero-letter-spacing: -0.04em;
+  --text-hero-letter-spacing: -0.03em;
   --text-hero: var(--text-hero-weight) var(--text-hero-size) / var(--text-hero-line-height)
     var(--text-hero-family);
 
   /* Subtitle: supporting copy under a title */
   --text-subtitle-family: var(--font-sans);
   --text-subtitle-weight: 400;
-  --text-subtitle-size: clamp(18px, 4.3vw, 26px);
+  --text-subtitle-size: clamp(16px, 3.7vw, 22px);
   --text-subtitle-line-height: 1.35;
   --text-subtitle: var(--text-subtitle-weight) var(--text-subtitle-size) /
     var(--text-subtitle-line-height) var(--text-subtitle-family);

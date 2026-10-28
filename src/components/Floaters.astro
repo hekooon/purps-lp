@@ -80,7 +80,9 @@ const floaters = images.map((src, i) => {
 
 	@supports (animation-timeline: scroll()) {
 		.floaters {
-			animation: parallax linear both;
+			animation-name: parallax;
+			animation-timing-function: linear;
+			animation-fill-mode: both;
 			animation-timeline: scroll(root);
 			animation-range: 0 var(--parallax-range);
 		}

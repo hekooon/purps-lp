@@ -12,6 +12,14 @@ body {
   background-color: var(--color-surface-neutral-bg);
   color: var(--color-text-primary);
   font-family: var(--font-sans);
+  /* Light text on a dark background renders heavy and fuzzy with macOS's
+     default subpixel smoothing; greyscale antialiasing keeps it crisp. Use
+     the fonts' kerning and ligatures, and never fake a missing weight. */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
+  font-synthesis: none;
 }
 
 h1,
