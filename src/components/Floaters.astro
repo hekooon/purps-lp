@@ -1,0 +1,238 @@
+---
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+// Every image in src/assets/floaters/ is scattered across the section and
+// drifts slightly. Spacing comes from the number of files, so adding or
+// removing one re-spaces the rest. Place inside a positioned element; this
+// fills it and sits behind it, and the outermost ones run past its edges.
+// Any image that would sit behind an element marked [data-floaters-avoid]
+// is moved sideways, out past whichever edge of it is nearer.
+const files = import.meta.glob<{ default: ImageMetadata }>(
+	'../assets/floaters/*.{png,jpg,jpeg,webp,avif}',
+	{ eager: true },
+);
+const images = Object.values(files).map((file) => file.default);
+
+// Rows evenly down the section; across, each steps on by the golden ratio,
+// which spreads any number of them evenly without lining them up. Across,
+// they keep out of a clear band down the middle (CLEAR_CENTRE of each half
+// of the window) and run a little past both edges, so the outermost ones are
+// cut off. Down, the top row stays clear of the top of the page.
+const GOLDEN = (Math.sqrt(5) - 1) / 2;
+// Where the first row starts across: the top right corner
+const FIRST_X = 0.9;
+const CLEAR_CENTRE = 0.5;
+const spreadX = (t: number) => {
+	const fromCentre = Math.abs(2 * t - 1);
+	const pushed = CLEAR_CENTRE + (1 - CLEAR_CENTRE) * fromCentre;
+	return 50 + Math.sign(t - 0.5) * 54 * pushed;
+};
+const spreadY = (t: number) => 4 + 100 * t;
+// Deterministic variety, so each one is sized and drifts differently but
+// stays the same from build to build
+const vary = (i: number, seed: number) => {
+	const n = Math.sin((i + 1) * seed) * 43758.5453;
+	return n - Math.floor(n);
+};
+
+// Sizes range from 0.8× to 1.2× the base width. All are blurred the same.
+const MIN_SIZE = 0.8;
+const MAX_SIZE = 1.2;
+
+const floaters = images.map((src, i) => {
+	return {
+		src,
+		style: [
+			`--x: ${spreadX((FIRST_X + i * GOLDEN) % 1).toFixed(2)}%`,
+			`--y: ${spreadY((i + 0.5) / images.length).toFixed(2)}%`,
+			`--size: ${(MIN_SIZE + (MAX_SIZE - MIN_SIZE) * vary(i, 12.9898)).toFixed(2)}`,
+			`--dx: ${(4 + 6 * vary(i, 78.233)).toFixed(1) * (i % 2 ? 1 : -1)}px`,
+			`--dy: ${(6 + 6 * vary(i, 37.719)).toFixed(1)}px`,
+			`--duration: ${(7 + 5 * vary(i, 4.1414)).toFixed(2)}s`,
+			`--delay: ${(-12 * vary(i, 91.17)).toFixed(2)}s`,
+		].join('; '),
+	};
+});
+---
+
+<div class="floaters" aria-hidden="true">
+	{
+		floaters.map(({ src, style }) => (
+			<span class="floater" {style}>
+				<Image {src} alt="" width={540} loading="eager" />
+			</span>
+		))
+	}
+</div>
+
+<style>
+	/* As wide as the window, whatever the width of the section it's in */
+	.floaters {
+		position: absolute;
+		inset: 0;
+		left: 50%;
+		width: 100vw;
+		translate: -50% 0;
+		z-index: -1;
+		pointer-events: none;
+	}
+
+	@supports (animation-timeline: scroll()) {
+		.floaters {
+			animation: parallax linear both;
+			animation-timeline: scroll(root);
+			animation-range: 0 var(--parallax-range);
+		}
+	}
+
+	/* Parallax: over the first --parallax-range of scrolling, the layer slides
+	   down by --parallax-lag of that, so the images scroll by more slowly than
+	   the text and phone in front of them. The script drives it instead where
+	   scroll-driven animations aren't supported. */
+	:root {
+		--parallax-range: 1600px;
+		--parallax-lag: 0.4;
+	}
+
+	@keyframes parallax {
+		from {
+			transform: none;
+		}
+		to {
+			transform: translateY(calc(var(--parallax-range) * var(--parallax-lag)));
+		}
+	}
+
+	.floater {
+		position: absolute;
+		left: var(--x);
+		top: var(--y);
+		width: calc(clamp(84px, 13.5vw, 192px) * var(--size));
+		translate: -50% -50%;
+		filter: blur(4px);
+		/* Set by the script from how far out it sits */
+		opacity: var(--opacity, 0.5);
+	}
+
+	img {
+		display: block;
+		width: 100%;
+		height: auto;
+		animation: drift var(--duration) ease-in-out var(--delay) infinite;
+	}
+
+	/* A slow loop: out one way, back past the start the other way, home */
+	@keyframes drift {
+		0%,
+		100% {
+			transform: translate(0, 0);
+		}
+		33% {
+			transform: translate(var(--dx), calc(var(--dy) * -1));
+		}
+		66% {
+			transform: translate(calc(var(--dx) * -0.6), calc(var(--dy) * 0.5));
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.floaters,
+		img {
+			animation: none;
+		}
+	}
+</style>
+
+<script>
+	// Space kept clear around the text, and the smallest share of an image that
+	// stays on screen when the nearer side has no room
+	const GAP = 24;
+	const MIN_VISIBLE = 0.5;
+
+	// Fainter towards the middle: NEAR_OPACITY at CLEAR_CENTRE of the way out
+	// from the centre or closer, rising to FAR_OPACITY at the window edges.
+	// CLEAR_CENTRE matches the band the images are spread to keep out of.
+	const NEAR_OPACITY = 0.2;
+	const FAR_OPACITY = 0.9;
+	const CLEAR_CENTRE = 0.5;
+
+	const scrollTimelines = CSS.supports('animation-timeline: scroll()');
+	const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+	for (const layer of document.querySelectorAll<HTMLElement>('.floaters')) {
+		const section = layer.parentElement;
+		if (!section) continue;
+		const floaters = [...layer.querySelectorAll<HTMLElement>('.floater')];
+		const avoid = [...section.querySelectorAll<HTMLElement>('[data-floaters-avoid]')];
+
+		// Without scroll-driven animations, follow the scroll here instead
+		const fallback = !scrollTimelines && !reducedMotion;
+		const parallax = () => {
+			const style = getComputedStyle(layer);
+			const range = parseFloat(style.getPropertyValue('--parallax-range'));
+			const lag = parseFloat(style.getPropertyValue('--parallax-lag'));
+			layer.style.transform = `translateY(${Math.min(window.scrollY, range) * lag}px)`;
+		};
+		if (fallback) {
+			let frame = 0;
+			window.addEventListener(
+				'scroll',
+				() => {
+					cancelAnimationFrame(frame);
+					frame = requestAnimationFrame(parallax);
+				},
+				{ passive: true },
+			);
+		}
+
+		const place = () => {
+			// Measure with the parallax shift taken off, so the images line up
+			// with the text the way they do before any scrolling
+			for (const floater of floaters) floater.style.left = '';
+			layer.style.animation = 'none';
+			layer.style.transform = 'none';
+			const bounds = layer.getBoundingClientRect();
+			const zones = avoid.map((el) => {
+				const r = el.getBoundingClientRect();
+				return { left: r.left - GAP, right: r.right + GAP, top: r.top - GAP, bottom: r.bottom + GAP };
+			});
+
+			for (const floater of floaters) {
+				const r = floater.getBoundingClientRect();
+				const hit = zones.find(
+					(z) => r.right > z.left && r.left < z.right && r.bottom > z.top && r.top < z.bottom,
+				);
+				if (!hit) continue;
+				// Out past the nearer side, but never so far it's mostly off screen
+				const toLeft = (r.left + r.right) / 2 < (hit.left + hit.right) / 2;
+				const half = r.width / 2;
+				const reach = half - r.width * MIN_VISIBLE;
+				const centre = toLeft
+					? Math.max(hit.left - half, bounds.left - reach)
+					: Math.min(hit.right + half, bounds.right + reach);
+				floater.style.left = `${centre - bounds.left}px`;
+			}
+
+			const middle = (bounds.left + bounds.right) / 2;
+			for (const floater of floaters) {
+				const r = floater.getBoundingClientRect();
+				const out = Math.abs((r.left + r.right) / 2 - middle) / (bounds.width / 2);
+				const t = Math.min(1, Math.max(0, (out - CLEAR_CENTRE) / (1 - CLEAR_CENTRE)));
+				floater.style.setProperty('--opacity', String(NEAR_OPACITY + (FAR_OPACITY - NEAR_OPACITY) * t));
+			}
+
+			layer.style.animation = '';
+			layer.style.transform = '';
+			if (fallback) parallax();
+		};
+
+		// Again whenever the window, the text or the images change size, such as
+		// when the web fonts arrive. Moving an image never resizes it, so this
+		// can't loop.
+		const observer = new ResizeObserver(place);
+		for (const el of [layer, ...avoid, ...floaters]) observer.observe(el);
+		place();
+		document.fonts.ready.then(place);
+	}
+</script>

@@ -1,0 +1,481 @@
+---
+import StatusBar from './StatusBar.astro';
+import TouchCursor from './TouchCursor.astro';
+
+// 3D take on PrototypeFrame.astro (kept as the 2D version): the same iPhone 17
+// front, tilted in perspective with a solid golden band you can see the
+// thickness of along the right side and bottom edge.
+
+interface Props {
+	src: string;
+	title: string;
+}
+
+const { src, title } = Astro.props;
+
+// The band's thickness is built from stacked copies of the outer outline
+// behind the front face, so the rounded corners extrude correctly. Shaded
+// lighter near the front edge and darker towards the back.
+// iPhone 17 is 7.95mm thick and 71.5mm wide, which is 46px at this size
+const DEPTH = 46;
+const LAYERS = 16;
+const mix = (from: number[], to: number[], t: number) =>
+	`rgb(${from.map((c, i) => Math.round(c + (to[i] - c) * t)).join(' ')})`;
+const extrusion = Array.from({ length: LAYERS }, (_, i) => ({
+	z: -((i + 1) * DEPTH) / LAYERS,
+	color: mix([201, 181, 142], [92, 77, 54], i / (LAYERS - 1)),
+}));
+---
+
+<div class="prototype">
+	<div class="stage">
+		<div class="scene">
+			<div class="device" style={`--depth: ${DEPTH}px`}>
+				{
+					extrusion.map(({ z, color }) => (
+						<span
+							class="extrude"
+							data-squircle="73"
+							style={`transform: translateZ(${z}px); background: ${color}`}
+							aria-hidden="true"
+						/>
+					))
+				}
+
+				<!-- Bottom edge: speaker grilles either side of the USB-C port -->
+				<span class="bottom-edge" aria-hidden="true">
+					<span class="grille"></span>
+					<span class="port"></span>
+					<span class="grille"></span>
+				</span>
+
+				<!-- Right edge: side button and Camera Control -->
+				<span class="edge-button side" aria-hidden="true">
+					<span class="groove"></span>
+					<span class="wall"></span>
+					<span class="wall"></span>
+					<span class="cap"></span>
+				</span>
+				<span class="edge-button camera-control" aria-hidden="true">
+					<span class="groove"></span>
+					<span class="cap"></span>
+				</span>
+
+				<div class="front">
+					<!-- Aluminium band (outer edge, polished face, inner lip), then the black bezel -->
+					<span class="band-edge" data-squircle="73" aria-hidden="true"></span>
+					<span class="band-face" data-squircle="72" aria-hidden="true"></span>
+					<span class="band-lip" data-squircle="69" aria-hidden="true"></span>
+					<span class="bezel" data-squircle="68" aria-hidden="true"></span>
+
+					<div class="phone" data-squircle="60">
+						<StatusBar />
+						<iframe {src} {title} allow="clipboard-write; fullscreen"></iframe>
+						<span class="glare" aria-hidden="true"></span>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<TouchCursor />
+</div>
+
+<style>
+	/* Registered so the scroll animation can interpolate it */
+	@property --tilt {
+		syntax: '<number>';
+		inherits: true;
+		initial-value: 1;
+	}
+
+	.prototype {
+		display: flex;
+		justify-content: center;
+		width: 100%;
+	}
+
+	/* Scaled and offset by the script so the tilted phone's visible outline
+	   fits the page width and gets the right amount of space around it */
+	.stage {
+		flex: none;
+		transform-origin: top center;
+	}
+
+	/* --tilt runs from 1 (fully tilted) to 0 (face-on) as the page scrolls
+	   the phone into place. The script sets --settle, the scroll distance
+	   where it lands. Without scroll-driven animations the script drives
+	   --tilt itself; with reduced motion it stays tilted. The shadow is drawn
+	   from the flattened scene, so it follows the tilt. */
+	.scene {
+		--tilt: 1;
+		perspective: 2400px;
+		filter: drop-shadow(0 48px 48px rgba(0, 0, 0, 0.55));
+	}
+
+	@supports (animation-timeline: scroll()) {
+		@media (prefers-reduced-motion: no-preference) {
+			.scene {
+				animation: phone-settle cubic-bezier(0.65, 0, 0.35, 1) both;
+				animation-timeline: scroll(root);
+				animation-range: 0 var(--settle, 400px);
+			}
+		}
+	}
+
+	@keyframes phone-settle {
+		from {
+			--tilt: 1;
+		}
+		to {
+			--tilt: 0;
+		}
+	}
+
+	/* iPhone 17: 402×874pt screen inside an 8px black bezel and a 5px band.
+	   Turned to show the right side, leaned back to show the bottom edge,
+	   then rolled clockwise. */
+	.device {
+		--band: 5px;
+		--bezel: 8px;
+
+		position: relative;
+		width: calc(402px + 2 * (var(--band) + var(--bezel)));
+		height: calc(874px + 2 * (var(--band) + var(--bezel)));
+		transform-style: preserve-3d;
+		transform:
+			rotateZ(calc(var(--tilt) * 16deg))
+			rotateX(calc(var(--tilt) * 28deg))
+			rotateY(calc(var(--tilt) * -26deg));
+	}
+
+	.extrude {
+		position: absolute;
+		inset: 0;
+		border-radius: 73px;
+	}
+
+	/* The front face is one flat layer, so its parts never fight over depth */
+	.front {
+		position: absolute;
+		inset: 0;
+		padding: calc(var(--band) + var(--bezel));
+	}
+
+	.band-edge,
+	.band-face,
+	.band-lip,
+	.bezel {
+		position: absolute;
+	}
+
+	.band-edge {
+		inset: 0;
+		border-radius: 73px;
+		background: linear-gradient(180deg, #2a2318, #15110b);
+	}
+
+	/* Brushed champagne gold: soft diagonal light bands plus a sheen on
+	   the long edges */
+	.band-face {
+		inset: 1px;
+		border-radius: 72px;
+		background:
+			linear-gradient(
+				90deg,
+				rgba(255, 236, 200, 0.16),
+				transparent 6%,
+				transparent 94%,
+				rgba(255, 236, 200, 0.16)
+			),
+			linear-gradient(
+				135deg,
+				#a8916a 0%,
+				#5c4e38 20%,
+				#8c7756 38%,
+				#4a3f2e 55%,
+				#7c6a4d 74%,
+				#54472f 88%,
+				#9a8562 100%
+			);
+	}
+
+	.band-lip {
+		inset: calc(var(--band) - 1px);
+		border-radius: 69px;
+		background: #0d0b08;
+	}
+
+	.bezel {
+		inset: var(--band);
+		border-radius: 68px;
+		background: #000;
+	}
+
+	.phone {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		width: 402px;
+		height: 874px;
+		overflow: hidden;
+		/* Plain rounded corners until the script swaps in the smoothed path */
+		border-radius: 60px;
+		background: var(--color-surface-neutral-bg);
+	}
+
+	iframe {
+		flex: 1;
+		width: 100%;
+		border: 0;
+		background: var(--color-surface-neutral-bg);
+	}
+
+	/* A faint reflection across the glass that fades out as the phone turns
+	   face-on; clicks pass straight through */
+	.glare {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		opacity: var(--tilt);
+		background: linear-gradient(
+			115deg,
+			rgba(255, 255, 255, 0.08) 0%,
+			rgba(255, 255, 255, 0.03) 30%,
+			transparent 45%
+		);
+	}
+
+	/* Flat strip on the bottom face, between the two rounded corners. It's
+	   folded back from the bottom edge to lie along the band's thickness. */
+	.bottom-edge {
+		position: absolute;
+		top: calc(100% + 0.5px);
+		left: 73px;
+		right: 73px;
+		height: var(--depth);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 22px;
+		transform-origin: top center;
+		transform: rotateX(-90deg);
+	}
+
+	.grille {
+		width: 64px;
+		height: 6px;
+		background: radial-gradient(circle, #1a150e 0 2px, transparent 2.5px) 0 0 / 10px 6px repeat-x;
+	}
+
+	.port {
+		width: 34px;
+		height: 10px;
+		border-radius: 5px;
+		background: #120f0a;
+		box-shadow: inset 0 0 0 1.5px #3a3122;
+	}
+
+	/* Pill-shaped buttons on the right side, centred in its depth. Each is
+	   folded flat against the side, so translateZ inside it points outwards:
+	   a dark groove cut into the band, then layers stacked out from it. */
+	.edge-button {
+		position: absolute;
+		left: calc(100% + 0.5px);
+		width: calc(var(--depth) * 0.45);
+		transform-origin: left center;
+		transform: translateZ(calc(var(--depth) * -0.275)) rotateY(90deg);
+		transform-style: preserve-3d;
+	}
+
+	.edge-button > span {
+		position: absolute;
+		inset: 0;
+		border-radius: 999px;
+	}
+
+	.groove {
+		margin: -1.5px;
+		background: #17130d;
+		transform: translateZ(0.1px);
+	}
+
+	/* The side button stands 2.5px proud: walls in shadowed gold, then a
+	   rounded cap lit across its width with a bright line down the middle */
+	.side {
+		top: 29%;
+		height: 11.3%;
+	}
+
+	.side .wall {
+		background: #6e5c40;
+	}
+
+	.side .wall:nth-child(2) {
+		transform: translateZ(0.8px);
+	}
+
+	.side .wall:nth-child(3) {
+		transform: translateZ(1.6px);
+	}
+
+	.side .cap {
+		transform: translateZ(2.5px);
+		background: linear-gradient(
+			90deg,
+			#6e5c40 0%,
+			#b39d74 22%,
+			#e8d9b5 46%,
+			#c9b58e 58%,
+			#8f7a56 82%,
+			#5f4f37 100%
+		);
+		box-shadow:
+			inset 0 1.5px 1px rgba(255, 246, 225, 0.45),
+			inset 0 -1.5px 1px rgba(0, 0, 0, 0.35);
+	}
+
+	/* Camera Control sits flush: a sapphire crystal inside a thin gold ring */
+	.camera-control {
+		top: 63%;
+		height: 5.7%;
+	}
+
+	.camera-control .groove {
+		margin: -1px;
+		background: linear-gradient(90deg, #8f7a56, #d6c39c 50%, #8f7a56);
+	}
+
+	.camera-control .cap {
+		inset: 1px;
+		transform: translateZ(0.3px);
+		background:
+			linear-gradient(
+				160deg,
+				rgba(255, 255, 255, 0.18) 0%,
+				rgba(255, 255, 255, 0.04) 35%,
+				transparent 50%
+			),
+			linear-gradient(90deg, #1c1813, #2f2a22 50%, #16120d);
+		box-shadow: inset 0 0 1.5px rgba(0, 0, 0, 0.8);
+	}
+</style>
+
+<script>
+	import { getSvgPath } from 'figma-squircle';
+
+	// iOS continuous corners: Figma's corner smoothing at 60% matches them.
+	// Each [data-squircle] element is clipped to a smoothed outline with the
+	// corner radius given in the attribute, redrawn whenever it resizes.
+	const CORNER_SMOOTHING = 0.6;
+
+	for (const el of document.querySelectorAll<HTMLElement>('[data-squircle]')) {
+		const cornerRadius = Number(el.dataset.squircle);
+		new ResizeObserver(([entry]) => {
+			const { inlineSize: width, blockSize: height } = entry.borderBoxSize[0];
+			const path = getSvgPath({
+				width,
+				height,
+				cornerRadius,
+				cornerSmoothing: CORNER_SMOOTHING,
+				preserveSmoothing: true,
+			});
+			el.style.clipPath = `path('${path}')`;
+			el.style.borderRadius = '0';
+		}).observe(el);
+	}
+
+	// The phone turns from tilted to face-on as it scrolls into place, and the
+	// two poses have different outlines. Measure both, scale the stage down if
+	// either is wider than the page, and centre it on the face-on pose where
+	// it comes to rest. The space above is set by the tilted pose it loads in,
+	// so the face-on phone rises a little into it as it straightens; below,
+	// there's room for both. Then work out how far the page scrolls before the
+	// phone is centred on screen: that's where it lands.
+	const scrollTimelines = CSS.supports('animation-timeline: scroll()');
+	const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+	for (const container of document.querySelectorAll<HTMLElement>('.prototype')) {
+		const stage = container.querySelector<HTMLElement>('.stage');
+		const scene = container.querySelector<HTMLElement>('.scene');
+		const device = container.querySelector<HTMLElement>('.device');
+		if (!stage || !scene || !device) continue;
+
+		let settle = 0;
+
+		// Without scroll-driven animations, follow the scroll here instead,
+		// eased like the CSS curve: cubic-bezier(0.65, 0, 0.35, 1) is the
+		// standard ease-in-out cubic
+		const easeInOut = (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
+		const track = () => {
+			const progress = settle > 0 ? Math.min(1, window.scrollY / settle) : 1;
+			scene.style.setProperty('--tilt', String(1 - easeInOut(progress)));
+		};
+		const fallback = !scrollTimelines && !reducedMotion;
+		if (fallback) {
+			let frame = 0;
+			window.addEventListener(
+				'scroll',
+				() => {
+					cancelAnimationFrame(frame);
+					frame = requestAnimationFrame(track);
+				},
+				{ passive: true },
+			);
+		}
+
+		const outline = (tilt: number) => {
+			scene.style.setProperty('--tilt', String(tilt));
+			const rects = [device, ...device.children].map((el) => el.getBoundingClientRect());
+			return {
+				left: Math.min(...rects.map((r) => r.left)),
+				right: Math.max(...rects.map((r) => r.right)),
+				top: Math.min(...rects.map((r) => r.top)),
+				bottom: Math.max(...rects.map((r) => r.bottom)),
+			};
+		};
+
+		const fit = () => {
+			// Measure both poses with the stage unscaled and the animation paused
+			scene.style.animation = 'none';
+			stage.style.transform = '';
+			stage.style.margin = '';
+			const layout = stage.getBoundingClientRect();
+			const tilted = outline(1);
+			const flat = outline(0);
+			scene.style.removeProperty('--tilt');
+			scene.style.animation = '';
+
+			// Centre on the face-on phone, and scale so the tilted pose still
+			// fits on whichever side it reaches further
+			const centreX = (flat.left + flat.right) / 2;
+			const halfWidth = Math.max(
+				centreX - Math.min(tilted.left, flat.left),
+				Math.max(tilted.right, flat.right) - centreX,
+			);
+			const scale = Math.min(1, container.clientWidth / (2 * halfWidth));
+			const shiftX = (layout.left + layout.width / 2 - centreX) * scale;
+			stage.style.transform = `translateX(${shiftX}px) scale(${scale})`;
+
+			// Reserve from the top of the tilted pose to the lowest edge of either
+			const top = tilted.top;
+			const bottom = Math.max(tilted.bottom, flat.bottom);
+			const marginTop = (layout.top - top) * scale;
+			const reserved = (bottom - top) * scale;
+			stage.style.margin = `${marginTop}px 0 ${reserved - layout.height - marginTop}px`;
+
+			// It lands once that space is centred on screen, or at the bottom of
+			// the page if it can't scroll that far
+			const centre = layout.top + window.scrollY + reserved / 2;
+			const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+			settle = Math.min(Math.max(0, centre - window.innerHeight / 2), maxScroll);
+			scene.style.setProperty('--settle', `${settle}px`);
+			if (fallback) track();
+		};
+
+		new ResizeObserver(fit).observe(container);
+		window.addEventListener('resize', fit);
+		fit();
+		// The text above it reflows when the web fonts arrive, moving the phone
+		document.fonts.ready.then(fit);
+	}
+</script>

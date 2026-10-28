@@ -1,5 +1,6 @@
 ---
 import StatusBar from './StatusBar.astro';
+import TouchCursor from './TouchCursor.astro';
 
 interface Props {
 	src: string;
@@ -28,6 +29,7 @@ const { src, title } = Astro.props;
 			<iframe {src} {title} allow="clipboard-write; fullscreen"></iframe>
 		</div>
 	</div>
+	<TouchCursor />
 </div>
 
 <style>

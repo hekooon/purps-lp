@@ -1,0 +1,97 @@
+---
+// Figma-style touch cursor: over the phone screen, the mouse becomes a
+// translucent circle that shrinks while the button is held. It's a native
+// cursor image, so the OS draws it and it tracks the pointer with no lag.
+// Render inside .prototype; it finds the .phone and its iframe from there.
+---
+
+<script>
+	// 48px circle in text/primary (#f4f3ef): 22% fill, 50% outline. Pressed,
+	// it's 90% of that size. Hotspot is the centre.
+	const SIZE = 48;
+	const CENTRE = SIZE / 2;
+	const circle = (r: number) =>
+		`<svg xmlns="http://www.w3.org/2000/svg" width="${SIZE}" height="${SIZE}" viewBox="0 0 ${SIZE} ${SIZE}">` +
+		`<circle cx="${CENTRE}" cy="${CENTRE}" r="${r}" fill="#f4f3ef" fill-opacity="0.22" ` +
+		`stroke="#f4f3ef" stroke-opacity="0.5" stroke-width="1.5"/></svg>`;
+	const toCursor = (svg: string) =>
+		`url("data:image/svg+xml,${encodeURIComponent(svg)}") ${CENTRE} ${CENTRE}, auto`;
+
+	// Native cursors can't transition, so the press and release step through
+	// pre-built sizes over 100ms instead. FRAMES[0] is default, the last is pressed.
+	const RADIUS = CENTRE - 0.75; // keeps the 1.5px outline inside the image
+	const PRESSED_RADIUS = RADIUS * 0.9;
+	const STEPS = 4;
+	const DURATION = 100;
+	const FRAMES = Array.from({ length: STEPS + 1 }, (_, i) =>
+		toCursor(circle(RADIUS + ((PRESSED_RADIUS - RADIUS) * i) / STEPS)),
+	);
+
+	const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+	const easeOut = (t: number) => 1 - (1 - t) ** 2;
+
+	// Only for a mouse or trackpad; touch screens keep their own taps
+	if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
+		for (const phone of document.querySelectorAll<HTMLElement>('.prototype .phone')) {
+			const iframe = phone.querySelector('iframe');
+			if (iframe) attach(phone, iframe);
+		}
+	}
+
+	function attach(phone: HTMLElement, iframe: HTMLIFrameElement) {
+		let frameRoot: HTMLElement | undefined;
+		let current = 0;
+		let animation = 0;
+
+		const show = (index: number) => {
+			current = index;
+			phone.style.cursor = FRAMES[index];
+			frameRoot?.style.setProperty('--touch-cursor', FRAMES[index]);
+		};
+
+		const animateTo = (target: number) => {
+			cancelAnimationFrame(animation);
+			if (reducedMotion.matches) return show(target);
+			const from = current;
+			const start = performance.now();
+			const step = (now: number) => {
+				const t = Math.min(1, (now - start) / DURATION);
+				// trunc, so the final size lands at the full duration
+				show(from + Math.trunc((target - from) * easeOut(t)));
+				if (t < 1) animation = requestAnimationFrame(step);
+			};
+			animation = requestAnimationFrame(step);
+		};
+		const press = () => animateTo(STEPS);
+		const release = () => animateTo(0);
+
+		// Status bar and the rest of the phone that belongs to this page
+		show(0);
+		phone.addEventListener('pointerdown', press);
+		phone.addEventListener('pointerup', release);
+		phone.addEventListener('pointerleave', release);
+
+		// Inside the prototype, which is served from this domain so its
+		// document can take the same cursor
+		const wireFrame = () => {
+			const win = iframe.contentWindow;
+			const doc = iframe.contentDocument;
+			if (!win || !doc) return;
+
+			const style = doc.createElement('style');
+			style.textContent = '*, *::before, *::after { cursor: var(--touch-cursor) !important; }';
+			doc.head.append(style);
+			frameRoot = doc.documentElement;
+			show(current);
+
+			const options = { capture: true, passive: true };
+			win.addEventListener('pointerdown', press, options);
+			for (const type of ['pointerup', 'pointercancel', 'pointerleave']) {
+				win.addEventListener(type, release, options);
+			}
+		};
+
+		iframe.addEventListener('load', wireFrame);
+		if (iframe.contentDocument?.readyState === 'complete') wireFrame();
+	}
+</script>

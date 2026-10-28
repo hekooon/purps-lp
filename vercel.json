@@ -1,3 +1,9 @@
 {
-  "framework": "astro"
+  "framework": "astro",
+  "rewrites": [
+    { "source": "/prototypes/:path*", "destination": "https://purps-demo-main.vercel.app/prototypes/:path*" },
+    { "source": "/assets/:path*", "destination": "https://purps-demo-main.vercel.app/assets/:path*" },
+    { "source": "/fonts/:path*", "destination": "https://purps-demo-main.vercel.app/fonts/:path*" },
+    { "source": "/icons/:path*", "destination": "https://purps-demo-main.vercel.app/icons/:path*" }
+  ]
 }

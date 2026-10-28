@@ -1,36 +1,87 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import PrototypeFrame from '../components/PrototypeFrame.astro';
+import Header from '../components/Header.astro';
+import Floaters from '../components/Floaters.astro';
+import ValueProps from '../components/ValueProps.astro';
+import Footer from '../components/Footer.astro';
+// 3D frame on trial; PrototypeFrame.astro is the 2D version to revert to
+import PrototypeFrame from '../components/PrototypeFrame3D.astro';
 ---
 
 <Layout title="Hello">
+	<Header />
 	<main>
-		<h1 class="hero text-hero">
-			<span>Trade what’s moving</span>
-			<span>Follow who’s winning.</span>
-		</h1>
-		<PrototypeFrame
-			src="https://purps-demo-main.vercel.app/prototypes/trade-entry/index.html"
-			title="Purps trade entry prototype"
-		/>
+		<section class="hero">
+			<Floaters />
+			<h1 class="text-hero" data-floaters-avoid>
+				<span>Trade what’s moving.</span>
+				<span>Follow who’s winning.</span>
+			</h1>
+			<p class="subtitle text-subtitle" data-floaters-avoid>
+				Live prices, funding and liquidity across Nado markets, 24/7, with the people who
+				follow them.
+			</p>
+			<PrototypeFrame
+				src="/prototypes/trade-entry/index.html"
+				title="Purps trade entry prototype"
+			/>
+			<a class="download" href="#">Download the app</a>
+		</section>
+
+		<ValueProps />
 	</main>
+	<Footer />
 </Layout>
 
 <style>
 	main {
+		padding: 0 16px 160px;
+		/* The floaters run the full window width */
+		overflow-x: clip;
+	}
+
+	section {
+		max-width: 1028px;
+		margin: 0 auto;
+	}
+
+	/* Its own stack, so the floaters sit behind everything in it but above the page */
+	.hero {
+		position: relative;
+		isolation: isolate;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 56px;
-		padding: 80px 16px 64px;
-	}
-
-	.hero {
-		margin: 0;
+		padding-top: 128px;
 		text-align: center;
 	}
 
-	.hero span {
+	h1 {
+		margin: 0;
+	}
+
+	h1 span {
 		display: block;
+	}
+
+	.subtitle {
+		max-width: 560px;
+		margin: 24px 0 112px;
+		color: var(--color-text-secondary);
+	}
+
+	/* The nav's Download button, scaled up */
+	.download {
+		display: flex;
+		align-items: center;
+		height: 64px;
+		margin-top: 64px;
+		padding: 0 40px;
+		border-radius: 999px;
+		background: var(--color-text-primary);
+		color: var(--color-text-on-color);
+		font: 700 20px / 24px var(--font-sans);
+		font-feature-settings: 'lnum' 1, 'tnum' 1;
+		text-decoration: none;
 	}
 </style>

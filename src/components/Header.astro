@@ -1,0 +1,129 @@
+---
+import logo from '../assets/purps-logo.svg?raw';
+
+// Stacked backdrop blurs, strongest at the top. Each layer is masked to fade
+// out further up than the one before, so the blur eases off towards the
+// bottom edge instead of stopping at a hard line.
+const BLURS = [1, 2, 4, 8, 16];
+const blurs = BLURS.map((radius, i) => ({
+	radius,
+	fadeEnd: 100 - (i * 100) / BLURS.length,
+}));
+---
+
+<header class="header">
+	<div class="backdrop" aria-hidden="true">
+		{
+			blurs.map(({ radius, fadeEnd }) => (
+				<span
+					style={`--blur: ${radius}px; --fade-start: ${fadeEnd * 0.4}%; --fade-end: ${fadeEnd}%`}
+				/>
+			))
+		}
+	</div>
+
+	<div class="bar">
+		<a class="logo" href="/" aria-label="Purps home" set:html={logo} />
+		<nav>
+			<a class="link" href="#">Guides</a>
+			<a class="link" href="#">Support</a>
+			<a class="download" href="#">Download</a>
+		</nav>
+	</div>
+</header>
+
+<style>
+	.header {
+		position: sticky;
+		top: 0;
+		z-index: 10;
+		display: flex;
+		align-items: center;
+		height: 80px;
+		padding: 0 16px;
+	}
+
+	/* Runs past the bar for the soft edge; the bg tint fades out with it */
+	.backdrop {
+		position: absolute;
+		inset: 0 0 -32px;
+		pointer-events: none;
+		background: linear-gradient(
+			to bottom,
+			color-mix(in srgb, var(--color-surface-neutral-bg) 95%, transparent),
+			color-mix(in srgb, var(--color-surface-neutral-bg) 75%, transparent) 60%,
+			transparent
+		);
+	}
+
+	.backdrop span {
+		position: absolute;
+		inset: 0;
+		backdrop-filter: blur(var(--blur));
+		-webkit-backdrop-filter: blur(var(--blur));
+		mask-image: linear-gradient(
+			to bottom,
+			#000 var(--fade-start),
+			transparent var(--fade-end)
+		);
+	}
+
+	.bar {
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		flex: 1;
+		max-width: 1028px;
+		margin: 0 auto;
+	}
+
+	.logo {
+		display: block;
+		color: var(--color-text-primary);
+	}
+
+	.logo :global(svg) {
+		display: block;
+		width: auto;
+		height: 22px;
+	}
+
+	nav {
+		display: flex;
+		align-items: center;
+		gap: 32px;
+	}
+
+	.link,
+	.download {
+		font: 700 14px / 20px var(--font-sans);
+		font-feature-settings: 'lnum' 1, 'tnum' 1;
+		text-decoration: none;
+		white-space: nowrap;
+	}
+
+	.link {
+		color: var(--color-text-secondary);
+	}
+
+	.link:hover {
+		color: var(--color-text-primary);
+	}
+
+	.download {
+		display: flex;
+		align-items: center;
+		height: 40px;
+		padding: 0 16px;
+		border-radius: 999px;
+		background: var(--color-text-primary);
+		color: var(--color-text-on-color);
+	}
+
+	@media (max-width: 420px) {
+		nav {
+			gap: 20px;
+		}
+	}
+</style>
