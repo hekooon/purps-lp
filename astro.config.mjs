@@ -19,6 +19,8 @@ const servedLocally = (/** @type {import('node:http').IncomingMessage} */ req) =
 
 // https://astro.build/config
 export default defineConfig({
+	// No dev toolbar over the page while working on it
+	devToolbar: { enabled: false },
 	vite: {
 		server: {
 			proxy: Object.fromEntries(
