@@ -53,15 +53,15 @@ const methods = [
 		width: calc(393 * var(--px));
 		height: calc((404 - var(--crop)) * var(--px));
 		padding: 0 calc(20 * var(--px)) calc(32 * var(--px));
-		translate: -50% 0;
-		/* Leaning back a little from its bottom edge, top furthest away */
-		transform: perspective(1200px) rotateX(14deg);
+		/* Centred, and leaning back a little from its bottom edge, top furthest
+		   away. All in one transform: the minifier drops a separate translate
+		   alongside a transform. */
+		transform: translateX(-50%) perspective(1200px) rotateX(14deg);
 		transform-origin: bottom center;
 		border-radius: calc(40 * var(--px)) calc(40 * var(--px)) 0 0;
 		/* Glass, as defined in global.css */
 		background: var(--glass-background);
 		backdrop-filter: var(--glass-blur);
-		-webkit-backdrop-filter: var(--glass-blur);
 		box-shadow: var(--glass-shadow);
 		font-feature-settings: 'lnum' 1, 'tnum' 1;
 	}
