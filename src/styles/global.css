@@ -76,6 +76,10 @@ body {
   text-rendering: optimizeLegibility;
   font-kerning: normal;
   font-synthesis: none;
+  /* Never leave a word on its own on the last line of any text: the browser
+     rebalances the last few lines to bring a second word down with it.
+     Inherited by everything; browsers without it just wrap as usual. */
+  text-wrap: pretty;
 }
 
 h1,
