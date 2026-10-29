@@ -80,8 +80,9 @@ const cards = [
 		top: 120px;
 		display: flex;
 		flex-direction: column;
-		gap: 40px;
-		height: min(680px, calc(100svh - 144px));
+		/* The extra room goes between the text and the visual */
+		gap: 80px;
+		height: min(720px, calc(100svh - 144px));
 		/* Less the border, so the text lines up with the nav's logo */
 		padding: calc(var(--layout-padding) - 0.5px);
 		border: 0.5px solid var(--color-border-default);
