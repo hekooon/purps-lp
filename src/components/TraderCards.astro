@@ -1,0 +1,311 @@
+---
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+// The top traders as a row of portrait cards, #1 on the left: avatar, name,
+// PnL and the markets they trade. Each PnL ticks every second, and as the
+// ranking changes the cards slide past each other into the new order. It
+// runs on past the right of the card, which crops it; there's nothing to
+// click or drag.
+const avatars = import.meta.glob<{ default: ImageMetadata }>('../assets/leaderboard/*.jpg', {
+	eager: true,
+});
+const avatar = (name: string) => avatars[`../assets/leaderboard/${name}.jpg`]?.default;
+// Every market icon, the same set the markets section uses
+const markets = Object.values(
+	import.meta.glob<{ default: ImageMetadata }>('../assets/markets/*.png', { eager: true }),
+).map((file) => file.default);
+
+// A different handful of markets for each trader, MIN_ASSETS to MAX_ASSETS
+// of them, picked at random each build
+const MIN_ASSETS = 2;
+const MAX_ASSETS = 7;
+const pickAssets = () => {
+	const count = MIN_ASSETS + Math.floor(Math.random() * (MAX_ASSETS - MIN_ASSETS + 1));
+	return [...markets].sort(() => Math.random() - 0.5).slice(0, count);
+};
+
+// Avatar crops from the Figma leaderboard: the photo's size and offset
+// within a 40px circle, in px at that size
+const traders = [
+	{ name: 'trademonk11', pnl: 68_412.57, crop: [111.9, -23.92, -6.34] },
+	{ name: 'believer', pnl: 61_903.22, crop: [174.5, -60.75, -6] },
+	{ name: 'Capodon', pnl: 59_846.1, crop: [111.4, -33.32, -9.09] },
+	{ name: 'Crizzy8', pnl: 52_377.84, crop: [149.85, -57.45, -6.03] },
+	{ name: 'Arango', pnl: 47_215.63, crop: [110.77, -30.99, -15.39] },
+	{ name: 'Yuri', pnl: 41_908.31, crop: [94.95, -32.52, -15.89] },
+	{ name: 'todamoon', pnl: 36_550.72, crop: [100.94, -16.08, 0] },
+	{ name: '@rand00m', pnl: 31_264.05, crop: [100.22, -16.42, -16.94] },
+	{ name: 'bagholdr', pnl: 24_781.49, crop: [80.91, -22.74, -3.87] },
+];
+
+// Avatar size, so each photo can be loaded big enough for its crop to stay
+// sharp on a 2x screen
+const AVATAR = 160;
+
+// In thousands, to one decimal: +$68.4K
+const usd = (n: number) => `+$${(n / 1000).toFixed(1)}K`;
+---
+
+<ol class="trader-cards" aria-hidden="true">
+	{
+		traders.map(({ name, pnl, crop: [size, x, y] }, i) => (
+			<li class="trader" style={`--slot: ${i}`} data-pnl={pnl} data-rank={i + 1}>
+				<span class="rank">
+					{i + 1}
+				</span>
+				<span class="avatar" style={`--crop-size: ${size / 40}; --x: ${x / 40}; --y: ${y / 40}`}>
+					<Image
+						src={avatar(`trader-${i + 1}`)!}
+						alt=""
+						width={Math.ceil(((size / 40) * AVATAR * 2) / 64) * 64}
+					/>
+				</span>
+				<span class="name">{name}</span>
+				<span class="pnl">{usd(pnl)}</span>
+				<span class="assets">
+					{pickAssets().map((src) => (
+						<Image class="asset" {src} alt="" width={64} height={64} />
+					))}
+				</span>
+			</li>
+		))
+	}
+</ol>
+
+<style>
+	/* Along the bottom of the card, inside its padding, in line with its
+	   text on the left and running off its right edge */
+	.trader-cards {
+		--card-width: 240px;
+		--card-gap: 12px;
+		/* Filling the space below the text (not just a line along its
+		   bottom, which never counts as on screen for the script) */
+		position: absolute;
+		inset: 0;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		font-feature-settings: 'lnum' 1, 'tnum' 1;
+	}
+
+	/* Every card sits at the left; --slot (its place in the ranking, set by
+	   the script) moves it along, sliding when it changes. */
+	.trader {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		width: var(--card-width);
+		padding: 40px;
+		border-radius: 20px;
+		background: var(--color-surface-neutral-container);
+		transform: translateX(calc(var(--slot) * (var(--card-width) + var(--card-gap))));
+		transition: transform 900ms cubic-bezier(0.32, 1.15, 0.5, 1);
+	}
+
+	/* The top three get their medal's colour (data-rank is kept up to date
+	   by the script) for the rank number and a ring round the avatar; the
+	   rest have quieter numbers and no ring */
+	.trader {
+		--medal: transparent;
+		--rank-color: var(--color-text-tertiary);
+	}
+
+	.trader[data-rank='1'] {
+		--medal: #e2b84f;
+	}
+
+	.trader[data-rank='2'] {
+		--medal: #c6c6c4;
+	}
+
+	.trader[data-rank='3'] {
+		--medal: #c58550;
+	}
+
+	.trader:is([data-rank='1'], [data-rank='2'], [data-rank='3']) {
+		--rank-color: var(--medal);
+	}
+
+	/* Whoever's moving up passes over the rest */
+	.trader.is-climbing {
+		z-index: 1;
+	}
+
+	/* Its place in the ranking, in the top left corner */
+	.rank {
+		position: absolute;
+		z-index: 1;
+		top: 12px;
+		left: 12px;
+		display: grid;
+		place-items: center;
+		min-width: 24px;
+		height: 24px;
+		color: var(--rank-color);
+		font: 700 13px / 1 var(--font-sans);
+		transition: color 300ms ease-out;
+	}
+
+	/* The photo, as wide as the card inside its padding (so the same space
+	   above it as either side), sized and shifted to the Figma crop */
+	.avatar {
+		position: relative;
+		flex: none;
+		width: 100%;
+		aspect-ratio: 1;
+		margin-bottom: 24px;
+		overflow: hidden;
+		border-radius: 999px;
+		/* The medal ring: 4px of the card's colour, then 4px of the medal.
+		   Two solid shadows rather than an offset outline, which browsers
+		   round unevenly so the ring and gap don't come out the same. */
+		box-shadow:
+			0 0 0 4px var(--color-surface-neutral-container),
+			0 0 0 8px var(--medal);
+		transition: box-shadow 300ms ease-out;
+	}
+
+	.avatar :global(img) {
+		position: absolute;
+		top: calc(var(--y) * 100%);
+		left: calc(var(--x) * 100%);
+		width: calc(var(--crop-size) * 100%);
+		max-width: none;
+		height: auto;
+	}
+
+	.name {
+		max-width: 100%;
+		overflow: hidden;
+		color: var(--color-text-primary);
+		font: 700 15px / 20px var(--font-sans);
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.pnl {
+		margin: 0 0 24px;
+		color: var(--color-text-positive);
+		font: 700 32px / 40px var(--font-sans);
+		letter-spacing: -0.02em;
+		white-space: nowrap;
+	}
+
+	/* The markets they trade, overlapping like the stacks in the hero title:
+	   each overlaps the last by 22/48 of its size. Rather than a ring, each
+	   one has a bite cut out where the next sits on it, a --gap wider than
+	   that circle, so whatever's behind shows through between them. */
+	.assets {
+		--asset-size: 28px;
+		--step: calc(var(--asset-size) * 26 / 48);
+		--gap: calc(var(--asset-size) / 16);
+		display: flex;
+		align-items: center;
+	}
+
+	.asset {
+		display: grid;
+		flex: none;
+		place-items: center;
+		width: var(--asset-size);
+		height: var(--asset-size);
+		border-radius: 999px;
+	}
+
+	.asset + .asset {
+		margin-left: calc(var(--asset-size) * -22 / 48);
+	}
+
+	.asset:not(:last-child) {
+		--bite: calc(var(--asset-size) / 2 + var(--gap));
+		mask-image: radial-gradient(
+			circle at calc(50% + var(--step)) 50%,
+			transparent var(--bite),
+			#000 calc(var(--bite) + 0.5px)
+		);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.trader {
+			transition: none;
+		}
+	}
+</style>
+
+<script>
+	// Every TICK each PnL drifts a little, but never past a neighbour: the
+	// order only changes every SHUFFLE ticks, when one trader climbs or falls
+	// one to three places (half the time each, so the field doesn't bunch up
+	// at the top), their PnL set to land between the two they now sit
+	// between. Nobody goes over CAP, and neighbours are kept at
+	// least GAP apart so their amounts never read the same.
+	const TICK = 1000;
+	const SHUFFLE = 5;
+	const DRIFT = [-0.0025, 0.0025];
+	const CAP = 70_000;
+	const GAP = 400;
+
+	const usd = (n: number) => `+$${(n / 1000).toFixed(1)}K`;
+	const between = ([low, high]: number[]) => low + Math.random() * (high - low);
+
+	for (const list of document.querySelectorAll<HTMLElement>('.trader-cards')) {
+		const cards = [...list.querySelectorAll<HTMLElement>('.trader')].map((el, slot) => ({
+			el,
+			pnl: Number(el.dataset.pnl),
+			slot,
+			text: el.querySelector('.pnl')!,
+			rank: el.querySelector<HTMLElement>('.rank')!,
+		}));
+		// Highest first
+		const ranked = [...cards];
+		let ticks = 0;
+
+		const tick = () => {
+			ticks++;
+			for (const card of cards) card.pnl *= 1 + between(DRIFT);
+
+			if (ticks % SHUFFLE === 0) {
+				const places = 1 + Math.floor(Math.random() * 3);
+				const last = ranked.length - 1;
+				const climb = Math.random() < 0.5;
+				// Climbers come from below the top, fallers from above the bottom
+				const from = climb
+					? 1 + Math.floor(Math.random() * last)
+					: Math.floor(Math.random() * last);
+				const to = climb ? Math.max(0, from - places) : Math.min(last, from + places);
+				const [mover] = ranked.splice(from, 1);
+				ranked.splice(to, 0, mover);
+				const above = to > 0 ? ranked[to - 1].pnl : Math.min(CAP, ranked[1].pnl * 1.06);
+				const below = to < last ? ranked[to + 1].pnl : above * 0.94;
+				mover.pnl = between([below, above]);
+			}
+
+			// Keep the order as it stands: under the cap, each at least GAP
+			// below the one above
+			ranked.forEach((card, slot) => {
+				const ceiling = slot === 0 ? CAP : ranked[slot - 1].pnl - GAP;
+				card.pnl = Math.min(card.pnl, ceiling);
+			});
+
+			ranked.forEach((card, slot) => {
+				card.el.classList.toggle('is-climbing', slot < card.slot);
+				card.slot = slot;
+				card.el.style.setProperty('--slot', String(slot));
+				card.text.textContent = usd(card.pnl);
+				card.rank.textContent = String(slot + 1);
+				card.el.dataset.rank = String(slot + 1);
+			});
+		};
+
+		// Only while it's on screen
+		let timer = 0;
+		new IntersectionObserver(([entry]) => {
+			clearInterval(timer);
+			if (entry.isIntersecting) timer = window.setInterval(tick, TICK);
+		}).observe(list);
+	}
+</script>

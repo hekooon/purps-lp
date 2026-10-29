@@ -1,37 +1,58 @@
 ---
+import { Image } from 'astro:assets';
+import TraderCards from './TraderCards.astro';
+import NotificationStack from './NotificationStack.astro';
+import notificationsBackdrop from '../assets/cards/notifications.png';
+
 // Value prop cards, one per row. Each sticks just under the nav as it
 // reaches it, so the next one scrolls up and lands on top of it, while the
 // one underneath shrinks and blurs away.
-// Placeholder copy and images until the real ones are in.
+// Placeholder images until the real ones are in, bar the live visuals.
 const cards = [
 	{
-		title: 'Every market, live',
-		subtitle: 'Placeholder: prices, funding and liquidity update the moment they move.',
+		title: 'Discover most profitable traders',
+		subtitle: 'Discover top traders. Follow the ones that are winning. No LARPing - just P&L.',
+		visual: TraderCards,
 	},
 	{
-		title: 'Follow the winners',
-		subtitle: 'Placeholder: see what top traders are buying and copy them in a tap.',
+		title: 'Real time notifications',
+		subtitle: 'The second your traders open a position, you know. Don’t miss out on your next trade.',
+		visual: NotificationStack,
+		backdrop: notificationsBackdrop,
 	},
 	{
-		title: 'Trade in seconds',
-		subtitle: 'Placeholder: pick a market, set your size and you’re in.',
+		title: 'Fund your account in seconds',
+		subtitle: 'Add funds with card, Apple Pay, or crypto and start trading in seconds.',
 	},
 	{
-		title: 'Cash out anytime',
-		subtitle: 'Placeholder: move your winnings out whenever you want, 24/7.',
+		title: 'Go long, go short, go bigger',
+		subtitle: 'Up or down, there’s always a trade. Trade with leverage across global markets.',
 	},
 ];
 ---
 
 <section class="value-props">
 	{
-		cards.map(({ title, subtitle }) => (
+		cards.map(({ title, subtitle, visual: Visual, backdrop }) => (
 			<article class="card">
 				<div class="copy">
 					<h2>{title}</h2>
 					<p class="text-subtitle">{subtitle}</p>
 				</div>
-				<div class="image" aria-hidden="true">Image</div>
+				{Visual ? (
+					<div class="image is-live">
+						{backdrop && (
+							<div class="backdrop">
+								<Image src={backdrop} alt="" />
+							</div>
+						)}
+						<Visual />
+					</div>
+				) : (
+					<div class="image" aria-hidden="true">
+						Image
+					</div>
+				)}
 			</article>
 		))
 	}
@@ -58,6 +79,7 @@ const cards = [
 		padding: var(--layout-padding);
 		border: 0.5px solid var(--color-border-default);
 		border-radius: 24px;
+		overflow: hidden;
 		background: var(--color-surface-neutral-bg);
 		/* --covered runs 0 to 1 as the next card slides over this one (set by
 		   the script); it shrinks back from its top edge throughout, and only
@@ -97,6 +119,67 @@ const cards = [
 		font: 500 14px / 20px var(--font-sans);
 	}
 
+	/* A live visual instead of the placeholder: it sizes itself to this box,
+	   and may run on past it to be cropped by the card's own edge */
+	.image.is-live {
+		position: relative;
+		display: block;
+		container-type: inline-size;
+		background: none;
+	}
+
+	/* A photo behind the live visual, from just below the text to the card's
+	   left, right and bottom edges (out through the card's padding), filling
+	   that whatever its shape, anchored to its top and fading in from there */
+	.backdrop {
+		--parallax: 120px;
+		position: absolute;
+		top: 0;
+		left: calc(-1 * var(--layout-padding));
+		width: calc(100% + 2 * var(--layout-padding));
+		height: calc(100% + var(--layout-padding));
+		overflow: hidden;
+		/* Fades in over its whole height, eased so there's no hard edge
+		   where it reaches full strength */
+		mask-image: linear-gradient(
+			to bottom,
+			transparent,
+			rgb(0 0 0 / 0.15) 20%,
+			rgb(0 0 0 / 0.4) 40%,
+			rgb(0 0 0 / 0.7) 65%,
+			#000 100%
+		);
+		pointer-events: none;
+	}
+
+	/* A 25% black scrim over the photo, under the visual */
+	.backdrop::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: rgb(0 0 0 / 0.25);
+	}
+
+	/* Parallax: --parallax taller than its frame, and lifted by that much
+	   while the card is down the window, settling as the card rises to where
+	   it sticks (--arrived, 0 to 1, set by the script). So it drifts down
+	   inside the card as the card comes up, as if further away. */
+	.backdrop :global(img) {
+		display: block;
+		width: 100%;
+		max-width: none;
+		height: calc(100% + var(--parallax));
+		object-fit: cover;
+		object-position: center top;
+		translate: 0 calc(var(--parallax) * (var(--arrived, 1) - 1));
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.backdrop :global(img) {
+			translate: none;
+		}
+	}
+
 	@media (max-width: 600px) {
 		.card {
 			gap: 24px;
@@ -105,19 +188,21 @@ const cards = [
 </style>
 
 <script>
-	// How far each card's successor has travelled from the bottom of the
-	// window to where it sticks: 0 before it shows, 1 once it covers this one
+	// How far each card has travelled from the bottom of the window to where
+	// it sticks: 0 before it shows, 1 once it's there. That's its --arrived
+	// (for the photo's parallax), and its predecessor's --covered.
 	for (const section of document.querySelectorAll<HTMLElement>('.value-props')) {
 		const cards = [...section.querySelectorAll<HTMLElement>('.card')];
 
 		const update = () => {
+			const arrived = cards.map((card) => {
+				const stuckAt = parseFloat(getComputedStyle(card).top);
+				const travelled = window.innerHeight - card.getBoundingClientRect().top;
+				return Math.min(1, Math.max(0, travelled / (window.innerHeight - stuckAt)));
+			});
 			cards.forEach((card, i) => {
-				const next = cards[i + 1];
-				if (!next) return;
-				const stuckAt = parseFloat(getComputedStyle(next).top);
-				const travelled = window.innerHeight - next.getBoundingClientRect().top;
-				const covered = Math.min(1, Math.max(0, travelled / (window.innerHeight - stuckAt)));
-				card.style.setProperty('--covered', covered.toFixed(3));
+				card.style.setProperty('--arrived', arrived[i].toFixed(3));
+				if (i + 1 < cards.length) card.style.setProperty('--covered', arrived[i + 1].toFixed(3));
 			});
 		};
 

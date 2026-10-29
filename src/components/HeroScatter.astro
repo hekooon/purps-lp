@@ -23,10 +23,10 @@ const COINS = 9;
 const AVATARS = 9;
 const spots = Math.min(COINS, coins.length) + Math.min(AVATARS, avatars.length);
 
-// Spread: rows evenly down the section; across, each steps on by the golden
-// ratio, which spreads any number evenly without lining them up. They keep
-// out of a clear band down the middle (CLEAR of each half of the window)
-// and run a little past both edges.
+// Spread: rows evenly down the middle half of the section's height; across,
+// each steps on by the golden ratio, which spreads any number evenly without
+// lining them up. They keep out of a clear band down the middle (CLEAR of
+// each half of the window) and run a little past both edges.
 const GOLDEN = (Math.sqrt(5) - 1) / 2;
 const CLEAR = 0.45;
 const spreadX = (t: number) => {
@@ -34,7 +34,7 @@ const spreadX = (t: number) => {
 	const pushed = CLEAR + (1 - CLEAR) * fromCentre;
 	return 50 + Math.sign(t - 0.5) * 52 * pushed;
 };
-const spreadY = (t: number) => 6 + 88 * t;
+const spreadY = (t: number) => 25.25 + 49.5 * t;
 // Deterministic variety, so the layout is the same from build to build
 const vary = (i: number, seed: number) => {
 	const n = Math.sin((i + 1) * seed) * 43758.5453;
@@ -50,8 +50,8 @@ const NEAR_LAG = 0.08;
 const MIN_TILT = 3;
 const MAX_TILT = 12;
 
-// Depth 0 (far: small, 6px blur, 35%, slowest to scroll) to 1 (near: big,
-// 3px blur, 80%, nearly keeping up with the page)
+// Depth 0 (far: small, 5px blur, 35%, slowest to scroll) to 1 (near: big,
+// 1px blur, 80%, nearly keeping up with the page)
 const floaters = Array.from({ length: spots }, (_, i) => {
 	const depth = vary(i, 12.9898);
 	return {
@@ -59,7 +59,7 @@ const floaters = Array.from({ length: spots }, (_, i) => {
 			`--x: ${spreadX((0.9 + i * GOLDEN) % 1).toFixed(2)}%`,
 			`--y: ${spreadY((i + 0.5) / spots).toFixed(2)}%`,
 			`--size: ${(0.55 + 0.75 * depth).toFixed(2)}`,
-			`--blur: ${(3 + 3 * (1 - depth)).toFixed(1)}px`,
+			`--blur: ${(1 + 4 * (1 - depth)).toFixed(1)}px`,
 			`--opacity: ${(0.35 + 0.45 * depth).toFixed(2)}`,
 			`--lag: ${(FAR_LAG + (NEAR_LAG - FAR_LAG) * depth).toFixed(3)}`,
 			// A slight fixed tilt, about an axis pointing anywhere, so it leans

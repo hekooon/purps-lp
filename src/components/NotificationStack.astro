@@ -1,0 +1,211 @@
+---
+import { Image } from 'astro:assets';
+import trademonk from '../assets/avatars/Frame 3.jpg';
+import degenkate from '../assets/avatars/Frame 4.jpg';
+import tylerdegen from '../assets/avatars/Frame 9.jpg';
+import moonmaxi from '../assets/avatars/Frame 18.jpg';
+import nvda from '../assets/markets/nvda.png';
+import tsla from '../assets/markets/tsla.png';
+import sol from '../assets/markets/sol.png';
+import hype from '../assets/markets/hype.png';
+
+// iOS notifications from the Purps app, each with the face of the trader or
+// the icon of the market it's about, arriving one after another: each new
+// one drops in at the top and pushes the rest down, the lowest running off
+// the bottom of the card. Loops through these for as long as it's on screen.
+// Sizes follow the Figma notification (353 by 56 on a 393-wide iPhone), in
+// --px so the whole thing scales to fit.
+const notifications = [
+	{ image: trademonk, title: 'trademonk11 shorted AAPL', body: 'Top 1 on leaderboard shorted at $268.40' },
+	{ image: nvda, title: 'NVDA is up +8.74%', body: '82 top traders went long in the last 30m' },
+	{ image: degenkate, title: 'degenkate went long BTC', body: 'You’re copying · 25x at $112,480' },
+	{ image: tsla, title: 'TSLA closed +$1,284.50', body: 'Your copy of tylerdegen closed in profit' },
+	{ image: tylerdegen, title: 'tylerdegen tipped you $20', body: 'TSLA long printed. this one’s on me ser' },
+	{ image: sol, title: 'SOL just broke $250', body: '41 traders you follow are in profit' },
+	{ image: moonmaxi, title: 'moonmaxi shorted ETH', body: 'Top 5 trader · 10x at $4,812.40' },
+	{ image: hype, title: 'HYPE is up +12.40%', body: 'Your traders added $2.1M in longs today' },
+];
+---
+
+<div class="screen" aria-hidden="true">
+	<div class="stack">
+		{
+			notifications.map(({ image, title, body }) => (
+				<div class="notification">
+					<Image class="icon" src={image} alt="" width={96} height={96} />
+					<div class="text">
+						<p class="title">{title}</p>
+						<p class="body">{body}</p>
+					</div>
+					<p class="time">now</p>
+				</div>
+			))
+		}
+	</div>
+</div>
+
+<style>
+	/* Where the notifications go: top-anchored, running off the bottom of the
+	   card. --px is one Figma pixel: as big as 1.4px, smaller if the card is too
+	   narrow for a 353-wide notification and some room either side. */
+	.screen {
+		--px: min(1.4px, calc((100cqw - 32px) / 353));
+		position: absolute;
+		top: calc(32 * var(--px));
+		bottom: 0;
+		left: 50%;
+		width: calc(393 * var(--px));
+		translate: -50% 0;
+	}
+
+	.stack {
+		position: absolute;
+		top: calc(16 * var(--px));
+		left: 50%;
+		width: calc(353 * var(--px));
+		translate: -50% 0;
+	}
+
+	/* Every notification sits at the top of the stack; the script moves each
+	   down to its place with --slot and shows or hides it */
+	.notification {
+		--step: calc(64 * var(--px));
+		position: absolute;
+		top: 0;
+		left: 0;
+		display: flex;
+		gap: calc(8 * var(--px));
+		align-items: flex-start;
+		width: 100%;
+		height: calc(56 * var(--px));
+		padding: calc(12 * var(--px)) calc(14 * var(--px)) calc(12 * var(--px)) calc(10 * var(--px));
+		border-radius: calc(20 * var(--px));
+		/* A faint wash of the text colour, blurring whatever passes behind,
+		   with a soft drop shadow */
+		background: color-mix(in srgb, var(--color-text-primary) 5%, transparent);
+		backdrop-filter: blur(24px) saturate(1.6);
+		-webkit-backdrop-filter: blur(24px) saturate(1.6);
+		box-shadow: 0 8px 48px rgb(0 0 0 / 0.25);
+		color: var(--color-text-primary);
+		opacity: 0;
+		transform: translateY(calc(var(--slot, 0) * var(--step))) scale(var(--shrink, 1));
+		transition:
+			transform 700ms cubic-bezier(0.32, 1.25, 0.5, 1),
+			opacity 400ms ease-out;
+	}
+
+	.notification.is-shown {
+		opacity: 1;
+	}
+
+	/* The bottom one on its way out */
+	.notification.is-leaving {
+		--shrink: 0.94;
+		opacity: 0;
+	}
+
+	/* The trader's face or the market's icon, round */
+	.icon {
+		flex: none;
+		align-self: center;
+		width: calc(32 * var(--px));
+		height: calc(32 * var(--px));
+		margin: 0 calc(4 * var(--px));
+		border-radius: 999px;
+		object-fit: cover;
+	}
+
+	.text {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.text p {
+		margin: 0;
+		overflow: hidden;
+		font-size: calc(13 * var(--px));
+		line-height: calc(16 * var(--px));
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.title {
+		font-weight: 700;
+		letter-spacing: -0.02em;
+	}
+
+	.body {
+		font-weight: 400;
+		letter-spacing: -0.008em;
+	}
+
+	.time {
+		flex: none;
+		margin: 0;
+		font-size: calc(11 * var(--px));
+		font-weight: 400;
+		line-height: calc(14 * var(--px));
+		font-feature-settings: 'lnum' 1, 'tnum' 1;
+		opacity: 0.6;
+	}
+</style>
+
+<script>
+	// How many show at once (the card crops the lowest), how often a new one
+	// arrives, and what each place in the stack says for its time
+	const VISIBLE = 5;
+	const EVERY = 2800;
+	const TIMES = ['now', '2m ago', '5m ago', '9m ago', '14m ago', '20m ago'];
+
+	const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+	for (const stack of document.querySelectorAll<HTMLElement>('.screen .stack')) {
+		const all = [...stack.querySelectorAll<HTMLElement>('.notification')];
+		// Newest first; the rest wait their turn
+		const shown: HTMLElement[] = [];
+		let next = 0;
+
+		const place = () => {
+			shown.forEach((el, slot) => {
+				el.style.setProperty('--slot', String(slot));
+				el.querySelector('.time')!.textContent = TIMES[slot] ?? '';
+				el.classList.toggle('is-leaving', slot >= VISIBLE);
+				el.classList.add('is-shown');
+			});
+		};
+
+		const arrive = () => {
+			const el = all[next];
+			next = (next + 1) % all.length;
+			// Snap a little above the stack, smaller and see-through, then let it
+			// drop in from there
+			el.classList.remove('is-shown', 'is-leaving');
+			el.style.transition = 'none';
+			el.style.setProperty('--slot', '-0.6');
+			el.style.setProperty('--shrink', '0.9');
+			el.offsetWidth;
+			el.style.transition = '';
+			el.style.removeProperty('--shrink');
+			shown.unshift(el);
+			place();
+			// Once it has faded out, the one pushed off the bottom is done
+			const gone = shown.splice(VISIBLE + 1);
+			for (const old of gone) old.classList.remove('is-shown', 'is-leaving');
+		};
+
+		// Start full, then keep them coming while the stack is on screen
+		for (let i = 0; i < VISIBLE; i++) {
+			shown.push(all[VISIBLE - 1 - i]);
+		}
+		next = VISIBLE;
+		place();
+		if (reducedMotion) continue;
+
+		let timer = 0;
+		const observer = new IntersectionObserver(([entry]) => {
+			clearInterval(timer);
+			if (entry.isIntersecting) timer = window.setInterval(arrive, EVERY);
+		});
+		observer.observe(stack);
+	}
+</script>
