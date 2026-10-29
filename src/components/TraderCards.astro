@@ -108,7 +108,7 @@ const usd = (n: number) => `+$${(n / 1000).toFixed(1)}K`;
 		backdrop-filter: var(--glass-blur);
 		box-shadow: var(--glass-shadow);
 		transform: translateX(calc(var(--slot) * (var(--card-width) + var(--card-gap))));
-		transition: transform 900ms cubic-bezier(0.32, 1.15, 0.5, 1);
+		transition: transform 1200ms ease-in-out;
 	}
 
 	/* The top three get their medal's colour (data-rank is kept up to date
@@ -135,9 +135,40 @@ const usd = (n: number) => `+$${(n / 1000).toFixed(1)}K`;
 		--rank-color: var(--medal);
 	}
 
-	/* Whoever's moving up passes over the rest */
-	.trader.is-climbing {
+	/* While it slides to a new place: a card moving up swells to 1.05 and
+	   passes over everything, one moving down shrinks to 0.95 and slips under,
+	   each easing back to full size as it lands. The rest sit in between. */
+	.trader {
 		z-index: 1;
+	}
+
+	.trader.is-climbing {
+		z-index: 2;
+		animation: rank-up 1200ms ease-in-out;
+	}
+
+	.trader.is-falling {
+		z-index: 0;
+		animation: rank-down 1200ms ease-in-out;
+	}
+
+	@keyframes rank-up {
+		50% {
+			scale: 1.05;
+		}
+	}
+
+	@keyframes rank-down {
+		50% {
+			scale: 0.95;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.trader.is-climbing,
+		.trader.is-falling {
+			animation: none;
+		}
 	}
 
 	/* Its place in the ranking, in the top left corner */
@@ -402,7 +433,12 @@ const usd = (n: number) => `+$${(n / 1000).toFixed(1)}K`;
 			});
 
 			ranked.forEach((card, slot) => {
-				card.el.classList.toggle('is-climbing', slot < card.slot);
+				if (slot !== card.slot) {
+					// Restart the swell or shrink, even if it was mid-way
+					card.el.classList.remove('is-climbing', 'is-falling');
+					card.el.offsetWidth;
+					card.el.classList.add(slot < card.slot ? 'is-climbing' : 'is-falling');
+				}
 				card.slot = slot;
 				card.el.style.setProperty('--slot', String(slot));
 				roll(card.text, usd(card.pnl));
@@ -410,6 +446,13 @@ const usd = (n: number) => `+$${(n / 1000).toFixed(1)}K`;
 				card.el.dataset.rank = String(slot + 1);
 			});
 		};
+
+		// Back to sitting level with the rest once the swell or shrink is over
+		for (const card of cards) {
+			card.el.addEventListener('animationend', () =>
+				card.el.classList.remove('is-climbing', 'is-falling'),
+			);
+		}
 
 		// Only while it's on screen
 		let timer = 0;
