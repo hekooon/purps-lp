@@ -203,11 +203,34 @@ const usd = (n: number) => `+$${(n / 1000).toFixed(1)}K`;
 	}
 
 	.pnl {
+		display: inline-flex;
+		align-items: baseline;
 		margin: 0 0 24px;
 		color: var(--color-text-positive);
 		font: 700 32px / 40px var(--font-sans);
+		font-variant-numeric: tabular-nums;
 		letter-spacing: -0.02em;
-		white-space: nowrap;
+		white-space: pre;
+	}
+
+	/* Rolling digits, as in the app: each character in its own slot, the old
+	   digit sliding out as the new one slides in (set up by the script) */
+	.pnl :global(.slot) {
+		position: relative;
+		display: inline-block;
+		overflow: hidden;
+	}
+
+	.pnl :global(.slot > span) {
+		display: block;
+		will-change: transform;
+	}
+
+	.pnl :global(.slot > span.out) {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
 	}
 
 	/* The markets they trade, overlapping like the stacks in the hero title:
@@ -265,6 +288,77 @@ const usd = (n: number) => `+$${(n / 1000).toFixed(1)}K`;
 	const GAP = 400;
 
 	const usd = (n: number) => `+$${(n / 1000).toFixed(1)}K`;
+
+	// Rolling digits, the same as the app's: each character sits in its own
+	// slot, and a digit that changes slides out as the new one slides in, up
+	// when the number rises and down when it falls, staggered from the right.
+	// Anything that isn't a digit swaps instantly. If the shape of the number
+	// changes (another digit, say), it's just set outright.
+	const SLIDE = { duration: 620, easing: 'cubic-bezier(.22,1,.28,1)', fill: 'both' } as const;
+	const STAGGER = 30;
+	type Slot = HTMLSpanElement & { glyph: HTMLSpanElement; digit: boolean };
+	const rolls = new WeakMap<HTMLElement, string>();
+	const roll = (el: HTMLElement, text: string) => {
+		const was = rolls.get(el);
+		if (was === text) return;
+		rolls.set(el, text);
+		if (!was || was.replace(/\d/g, '#') !== text.replace(/\d/g, '#')) {
+			el.replaceChildren(
+				...[...text].map((ch) => {
+					const slot = document.createElement('span') as Slot;
+					slot.className = 'slot';
+					slot.digit = ch >= '0' && ch <= '9';
+					slot.glyph = document.createElement('span');
+					slot.glyph.textContent = ch;
+					slot.append(slot.glyph);
+					return slot;
+				}),
+			);
+			return;
+		}
+		const value = (t: string) => parseFloat(t.replace(/[^0-9.-]/g, '')) || 0;
+		const up = value(text) >= value(was);
+		const slots = [...el.children] as Slot[];
+		const digits = (text.match(/\d/g) ?? []).length;
+		let seen = 0;
+		slots.forEach((slot, i) => {
+			const ch = text[i];
+			if (!slot.digit) {
+				slot.glyph.textContent = ch;
+				return;
+			}
+			seen++;
+			const old = slot.glyph;
+			if (old.textContent === ch) return;
+			// Never more than the outgoing and incoming digit in a slot
+			slot.querySelectorAll('.out').forEach((n) => n.remove());
+			old.getAnimations().forEach((a) => a.finish());
+			const glyph = document.createElement('span');
+			glyph.textContent = ch;
+			old.classList.add('out');
+			slot.append(glyph);
+			slot.glyph = glyph;
+			const timing = { ...SLIDE, delay: (digits - seen) * STAGGER };
+			const shift = up ? 100 : -100;
+			glyph.animate(
+				[
+					{ transform: `translateY(${shift}%)`, opacity: 0 },
+					{ transform: 'translateY(0)', opacity: 1 },
+				],
+				timing,
+			);
+			old
+				.animate(
+					[
+						{ transform: 'translateY(0)', opacity: 1 },
+						{ transform: `translateY(${-shift}%)`, opacity: 0 },
+					],
+					timing,
+				)
+				.finished.then(() => old.remove())
+				.catch(() => {});
+		});
+	};
 	const between = ([low, high]: number[]) => low + Math.random() * (high - low);
 
 	for (const list of document.querySelectorAll<HTMLElement>('.trader-cards')) {
@@ -272,9 +366,11 @@ const usd = (n: number) => `+$${(n / 1000).toFixed(1)}K`;
 			el,
 			pnl: Number(el.dataset.pnl),
 			slot,
-			text: el.querySelector('.pnl')!,
+			text: el.querySelector<HTMLElement>('.pnl')!,
 			rank: el.querySelector<HTMLElement>('.rank')!,
 		}));
+		// Split each PnL into slots now, so its first change already rolls
+		for (const card of cards) roll(card.text, usd(card.pnl));
 		// Highest first
 		const ranked = [...cards];
 		let ticks = 0;
@@ -310,7 +406,7 @@ const usd = (n: number) => `+$${(n / 1000).toFixed(1)}K`;
 				card.el.classList.toggle('is-climbing', slot < card.slot);
 				card.slot = slot;
 				card.el.style.setProperty('--slot', String(slot));
-				card.text.textContent = usd(card.pnl);
+				roll(card.text, usd(card.pnl));
 				card.rank.textContent = String(slot + 1);
 				card.el.dataset.rank = String(slot + 1);
 			});
