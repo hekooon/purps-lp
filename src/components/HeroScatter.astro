@@ -50,14 +50,50 @@ const NEAR_LAG = 0.08;
 const MIN_TILT = 3;
 const MAX_TILT = 12;
 
+// Where each spot goes, as % of the section
+const places = Array.from({ length: spots }, (_, i) => ({
+	x: spreadX((0.9 + i * GOLDEN) % 1),
+	y: spreadY((i + 0.5) / spots),
+}));
+
+// Depths, spread evenly from far to near but leaning far (SKEW), so there
+// are more small ones than big. Then shuffled between the spots until no
+// swap improves the mix: neighbours (closeness falling off over
+// NEIGHBOURHOOD, in % of the section, across counting for more than down
+// as it's wider) should differ in depth, and above all not both be near.
+// That keeps the big ones apart and the sizes varied all over.
+const SKEW = 1.4;
+const NEIGHBOURHOOD = 28;
+const depths = Array.from({ length: spots }, (_, k) => ((k + 0.5) / spots) ** SKEW);
+const closeness = places.map((a) =>
+	places.map((b) => Math.exp(-Math.hypot((a.x - b.x) * 1.6, a.y - b.y) / NEIGHBOURHOOD)),
+);
+const clash = (a: number, b: number) => 0.5 * (1 - Math.abs(a - b)) + 3 * a * b;
+// How much spot i clashes with all the others at depth d
+const strain = (i: number, d: number, skip: number) =>
+	depths.reduce((sum, other, j) => (j === i || j === skip ? sum : sum + closeness[i][j] * clash(d, other)), 0);
+for (let improved = true; improved; ) {
+	improved = false;
+	for (let i = 0; i < spots; i++) {
+		for (let j = i + 1; j < spots; j++) {
+			const now = strain(i, depths[i], j) + strain(j, depths[j], i);
+			const swapped = strain(i, depths[j], j) + strain(j, depths[i], i);
+			if (swapped < now - 1e-9) {
+				[depths[i], depths[j]] = [depths[j], depths[i]];
+				improved = true;
+			}
+		}
+	}
+}
+
 // Depth 0 (far: small, 5px blur, 35%, slowest to scroll) to 1 (near: big,
 // 1px blur, 80%, nearly keeping up with the page)
-const floaters = Array.from({ length: spots }, (_, i) => {
-	const depth = vary(i, 12.9898);
+const floaters = places.map(({ x, y }, i) => {
+	const depth = depths[i];
 	return {
 		style: [
-			`--x: ${spreadX((0.9 + i * GOLDEN) % 1).toFixed(2)}%`,
-			`--y: ${spreadY((i + 0.5) / spots).toFixed(2)}%`,
+			`--x: ${x.toFixed(2)}%`,
+			`--y: ${y.toFixed(2)}%`,
 			`--size: ${(0.55 + 0.75 * depth).toFixed(2)}`,
 			`--blur: ${(1 + 4 * (1 - depth)).toFixed(1)}px`,
 			`--opacity: ${(0.35 + 0.45 * depth).toFixed(2)}`,

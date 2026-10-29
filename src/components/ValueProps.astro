@@ -76,9 +76,10 @@ const cards = [
 		flex-direction: column;
 		gap: 40px;
 		height: min(680px, calc(100svh - 144px));
-		padding: var(--layout-padding);
+		/* Less the border, so the text lines up with the nav's logo */
+		padding: calc(var(--layout-padding) - 0.5px);
 		border: 0.5px solid var(--color-border-default);
-		border-radius: 24px;
+		border-radius: 40px;
 		overflow: hidden;
 		background: var(--color-surface-neutral-bg);
 		/* --covered runs 0 to 1 as the next card slides over this one (set by
@@ -188,21 +189,31 @@ const cards = [
 </style>
 
 <script>
-	// How far each card has travelled from the bottom of the window to where
-	// it sticks: 0 before it shows, 1 once it's there. That's its --arrived
-	// (for the photo's parallax), and its predecessor's --covered.
+	// --arrived: how far each card has travelled from the bottom of the window
+	// to where it sticks, 0 before it shows, 1 once it's there (for the
+	// photo's parallax). --covered: how far the next card has slid over this
+	// one, 0 until it reaches this card's bottom edge, 1 once it covers it.
+	// So a card only starts shrinking away once the next actually overlaps
+	// it, not as soon as the next comes into view.
 	for (const section of document.querySelectorAll<HTMLElement>('.value-props')) {
 		const cards = [...section.querySelectorAll<HTMLElement>('.card')];
 
 		const update = () => {
-			const arrived = cards.map((card) => {
-				const stuckAt = parseFloat(getComputedStyle(card).top);
-				const travelled = window.innerHeight - card.getBoundingClientRect().top;
-				return Math.min(1, Math.max(0, travelled / (window.innerHeight - stuckAt)));
-			});
 			cards.forEach((card, i) => {
-				card.style.setProperty('--arrived', arrived[i].toFixed(3));
-				if (i + 1 < cards.length) card.style.setProperty('--covered', arrived[i + 1].toFixed(3));
+				const stuckAt = parseFloat(getComputedStyle(card).top);
+				// It shrinks from its top edge, so that stays put
+				const top = card.getBoundingClientRect().top;
+				const travelled = window.innerHeight - top;
+				const arrived = Math.min(1, Math.max(0, travelled / (window.innerHeight - stuckAt)));
+				card.style.setProperty('--arrived', arrived.toFixed(3));
+
+				const next = cards[i + 1];
+				if (!next) return;
+				const bottom = top + card.offsetHeight;
+				const nextStuckAt = parseFloat(getComputedStyle(next).top);
+				const overlap = bottom - next.getBoundingClientRect().top;
+				const covered = Math.min(1, Math.max(0, overlap / (bottom - nextStuckAt)));
+				card.style.setProperty('--covered', covered.toFixed(3));
 			});
 		};
 
