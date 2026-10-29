@@ -6,7 +6,8 @@ import type { ImageMetadata } from 'astro';
 // PnL and the markets they trade. Each PnL ticks every second, and as the
 // ranking changes the cards slide past each other into the new order. It
 // runs on past the right of the card, which crops it; there's nothing to
-// click or drag.
+// click or drag. Six traders, all loaded up front (photos included), so one
+// climbing into view never arrives half-drawn.
 const avatars = import.meta.glob<{ default: ImageMetadata }>('../assets/leaderboard/*.jpg', {
 	eager: true,
 });
@@ -26,15 +27,12 @@ const pickAssets = () => {
 };
 
 const traders = [
-	{ name: 'trademonk11', pnl: 68_412.57 },
-	{ name: 'believer', pnl: 61_903.22 },
-	{ name: 'Capodon', pnl: 59_846.1 },
-	{ name: 'Crizzy8', pnl: 52_377.84 },
-	{ name: 'Arango', pnl: 47_215.63 },
-	{ name: 'Yuri', pnl: 41_908.31 },
-	{ name: 'todamoon', pnl: 36_550.72 },
-	{ name: '@rand00m', pnl: 31_264.05 },
-	{ name: 'bagholdr', pnl: 24_781.49 },
+	{ name: 'rugpulldaddy', pnl: 68_412.57 },
+	{ name: '0xliquidated', pnl: 61_903.22 },
+	{ name: 'apeintoit', pnl: 59_846.1 },
+	{ name: 'wenlambo.eth', pnl: 52_377.84 },
+	{ name: '100xorzero', pnl: 47_215.63 },
+	{ name: 'ngmi_larry', pnl: 41_908.31 },
 ];
 
 // Avatar size; each photo is loaded at twice it for sharp 2x screens. The
@@ -60,6 +58,7 @@ const usd = (n: number) => `+$${(n / 1000).toFixed(1)}K`;
 							alt=""
 							width={AVATAR * 2}
 							height={AVATAR * 2}
+							loading="eager"
 						/>
 					</span>
 				</span>
@@ -67,7 +66,7 @@ const usd = (n: number) => `+$${(n / 1000).toFixed(1)}K`;
 				<span class="pnl">{usd(pnl)}</span>
 				<span class="assets">
 					{pickAssets().map((src) => (
-						<Image class="asset" {src} alt="" width={64} height={64} />
+						<Image class="asset" {src} alt="" width={64} height={64} loading="eager" />
 					))}
 				</span>
 			</li>
