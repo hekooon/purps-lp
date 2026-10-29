@@ -25,22 +25,21 @@ const pickAssets = () => {
 	return [...markets].sort(() => Math.random() - 0.5).slice(0, count);
 };
 
-// Avatar crops from the Figma leaderboard: the photo's size and offset
-// within a 40px circle, in px at that size
 const traders = [
-	{ name: 'trademonk11', pnl: 68_412.57, crop: [111.9, -23.92, -6.34] },
-	{ name: 'believer', pnl: 61_903.22, crop: [174.5, -60.75, -6] },
-	{ name: 'Capodon', pnl: 59_846.1, crop: [111.4, -33.32, -9.09] },
-	{ name: 'Crizzy8', pnl: 52_377.84, crop: [149.85, -57.45, -6.03] },
-	{ name: 'Arango', pnl: 47_215.63, crop: [110.77, -30.99, -15.39] },
-	{ name: 'Yuri', pnl: 41_908.31, crop: [94.95, -32.52, -15.89] },
-	{ name: 'todamoon', pnl: 36_550.72, crop: [100.94, -16.08, 0] },
-	{ name: '@rand00m', pnl: 31_264.05, crop: [100.22, -16.42, -16.94] },
-	{ name: 'bagholdr', pnl: 24_781.49, crop: [80.91, -22.74, -3.87] },
+	{ name: 'trademonk11', pnl: 68_412.57 },
+	{ name: 'believer', pnl: 61_903.22 },
+	{ name: 'Capodon', pnl: 59_846.1 },
+	{ name: 'Crizzy8', pnl: 52_377.84 },
+	{ name: 'Arango', pnl: 47_215.63 },
+	{ name: 'Yuri', pnl: 41_908.31 },
+	{ name: 'todamoon', pnl: 36_550.72 },
+	{ name: '@rand00m', pnl: 31_264.05 },
+	{ name: 'bagholdr', pnl: 24_781.49 },
 ];
 
-// Avatar size, so each photo can be loaded big enough for its crop to stay
-// sharp on a 2x screen
+// Avatar size; each photo is loaded at twice it for sharp 2x screens. The
+// photos in src/assets/leaderboard are already cropped to the Figma
+// leaderboard's framing.
 const AVATAR = 160;
 
 // In thousands, to one decimal: +$68.4K
@@ -49,17 +48,18 @@ const usd = (n: number) => `+$${(n / 1000).toFixed(1)}K`;
 
 <ol class="trader-cards" aria-hidden="true">
 	{
-		traders.map(({ name, pnl, crop: [size, x, y] }, i) => (
+		traders.map(({ name, pnl }, i) => (
 			<li class="trader" style={`--slot: ${i}`} data-pnl={pnl} data-rank={i + 1}>
 				<span class="rank">
 					{i + 1}
 				</span>
-				<span class="avatar" style={`--crop-size: ${size / 40}; --x: ${x / 40}; --y: ${y / 40}`}>
+				<span class="avatar">
 					<span class="photo">
 						<Image
 							src={avatar(`trader-${i + 1}`)!}
 							alt=""
-							width={Math.ceil(((size / 40) * AVATAR * 2) / 64) * 64}
+							width={AVATAR * 2}
+							height={AVATAR * 2}
 						/>
 					</span>
 				</span>
@@ -103,10 +103,11 @@ const usd = (n: number) => `+$${(n / 1000).toFixed(1)}K`;
 		width: var(--card-width);
 		padding: 40px;
 		border-radius: 20px;
-		/* The same glass as the notifications */
-		background: color-mix(in srgb, var(--color-text-primary) 3%, transparent);
-		backdrop-filter: blur(24px) saturate(1.6);
-		-webkit-backdrop-filter: blur(24px) saturate(1.6);
+		/* Glass, as defined in global.css */
+		background: var(--glass-background);
+		backdrop-filter: var(--glass-blur);
+		-webkit-backdrop-filter: var(--glass-blur);
+		box-shadow: var(--glass-shadow);
 		transform: translateX(calc(var(--slot) * (var(--card-width) + var(--card-gap))));
 		transition: transform 900ms cubic-bezier(0.32, 1.15, 0.5, 1);
 	}
@@ -156,7 +157,7 @@ const usd = (n: number) => `+$${(n / 1000).toFixed(1)}K`;
 	}
 
 	/* The photo, as wide as the card inside its padding (so the same space
-	   above it as either side), sized and shifted to the Figma crop */
+	   above it as either side) */
 	.avatar {
 		position: relative;
 		flex: none;
@@ -186,12 +187,10 @@ const usd = (n: number) => `+$${(n / 1000).toFixed(1)}K`;
 	}
 
 	.photo :global(img) {
-		position: absolute;
-		top: calc(var(--y) * 100%);
-		left: calc(var(--x) * 100%);
-		width: calc(var(--crop-size) * 100%);
-		max-width: none;
-		height: auto;
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
 	}
 
 	.name {
@@ -260,7 +259,7 @@ const usd = (n: number) => `+$${(n / 1000).toFixed(1)}K`;
 	// between. Nobody goes over CAP, and neighbours are kept at
 	// least GAP apart so their amounts never read the same.
 	const TICK = 1000;
-	const SHUFFLE = 5;
+	const SHUFFLE = 3;
 	const DRIFT = [-0.0025, 0.0025];
 	const CAP = 70_000;
 	const GAP = 400;

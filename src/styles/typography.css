@@ -15,7 +15,7 @@
 
   /* Subtitle: supporting copy under a title */
   --text-subtitle-family: var(--font-sans);
-  --text-subtitle-weight: 400;
+  --text-subtitle-weight: 500;
   --text-subtitle-size: clamp(16px, 3.4vw, 20px);
   --text-subtitle-line-height: 1.35;
   --text-subtitle: var(--text-subtitle-weight) var(--text-subtitle-size) /

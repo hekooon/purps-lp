@@ -41,6 +41,15 @@ html.intro-wait .subtitle {
   --color-button-secondary-hover: var(--color-border-default);
 }
 
+/* Glass: the see-through panels laid over the value prop photos (the
+   notifications, the trader cards and the add-money sheet). A faint wash of
+   the text colour that blurs what's behind, and a soft shadow. */
+:root {
+  --glass-background: color-mix(in srgb, var(--color-text-primary) 3%, transparent);
+  --glass-blur: blur(32px) saturate(1.6);
+  --glass-shadow: 0 8px 48px rgb(0 0 0 / 0.25);
+}
+
 /* Every button presses in a little and eases its hover colour: the pills
    (Download, Try demo, the store buttons) and the close buttons */
 :where(.download, .demo, .store, .close, .demo-close) {

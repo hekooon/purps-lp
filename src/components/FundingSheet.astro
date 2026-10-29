@@ -1,0 +1,135 @@
+---
+import apple from '../assets/funding/apple.svg';
+import card from '../assets/funding/card.svg';
+import crypto from '../assets/funding/crypto.svg';
+import revolut from '../assets/funding/revolut.svg';
+
+// The app's "add money" sheet: a handle, then each way to fund an account
+// with its limit and speed. From the Figma sheet (393 by 404), centred
+// across the space it's given and standing on the card's bottom edge, its
+// empty lower part (CROP of it) cut off there while the last method stays in
+// view, in --px so it scales to fit. It's cut to length rather than run off
+// the card, as a background blur that the card clips flickers at the edge.
+const methods = [
+	{ icon: apple, name: 'Apple Pay', detail: '$116k limit · Instant' },
+	{ icon: card, name: 'Card', detail: '$116k limit · Instant' },
+	{ icon: crypto, name: 'Crypto', detail: 'No limit · Instant' },
+	{ icon: revolut, name: 'Revolut Pay', detail: '$116k limit · Instant', small: true },
+];
+---
+
+<div class="sheet" aria-hidden="true">
+	<span class="handle"></span>
+	<ul class="methods">
+		{
+			methods.map(({ icon, name, detail, small }) => (
+				<li class="method">
+					<span class="icon">
+						<img src={icon.src} alt="" class:list={{ small }} />
+					</span>
+					<span class="label">
+						<span class="name">{name}</span>
+						<span class="detail">{detail}</span>
+					</span>
+				</li>
+			))
+		}
+	</ul>
+</div>
+
+<style>
+	/* --px is one Figma pixel: as big as 1.75px, smaller if the space is too
+	   narrow for the 393-wide sheet and some room either side */
+	.sheet {
+		--px: min(1.75px, calc((100cqw - 32px) / 393));
+		--crop: 120;
+		position: absolute;
+		bottom: calc(-1 * var(--layout-padding));
+		left: 50%;
+		display: flex;
+		flex-direction: column;
+		gap: calc(20 * var(--px));
+		align-items: center;
+		width: calc(393 * var(--px));
+		height: calc((404 - var(--crop)) * var(--px));
+		padding: 0 calc(20 * var(--px)) calc(32 * var(--px));
+		translate: -50% 0;
+		/* Leaning back a little from its bottom edge, top furthest away */
+		transform: perspective(1200px) rotateX(14deg);
+		transform-origin: bottom center;
+		border-radius: calc(40 * var(--px)) calc(40 * var(--px)) 0 0;
+		/* Glass, as defined in global.css */
+		background: var(--glass-background);
+		backdrop-filter: var(--glass-blur);
+		-webkit-backdrop-filter: var(--glass-blur);
+		box-shadow: var(--glass-shadow);
+		font-feature-settings: 'lnum' 1, 'tnum' 1;
+	}
+
+	/* The grabber, 8px down from the top edge */
+	.handle {
+		flex: none;
+		width: calc(40 * var(--px));
+		height: calc(4 * var(--px));
+		margin-top: calc(8 * var(--px));
+		border-radius: calc(6 * var(--px));
+		background: color-mix(in srgb, var(--color-text-primary) 20%, transparent);
+	}
+
+	.methods {
+		display: flex;
+		flex: none;
+		flex-direction: column;
+		gap: calc(4 * var(--px));
+		width: 100%;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.method {
+		display: flex;
+		gap: calc(12 * var(--px));
+		align-items: center;
+		height: calc(56 * var(--px));
+	}
+
+	.icon {
+		display: grid;
+		flex: none;
+		place-items: center;
+		width: calc(40 * var(--px));
+		height: calc(40 * var(--px));
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--color-text-primary) 5%, transparent);
+	}
+
+	.icon img {
+		width: calc(20 * var(--px));
+		height: calc(20 * var(--px));
+	}
+
+	/* Revolut's mark is drawn at 16 in its 20px slot */
+	.icon img.small {
+		width: calc(16 * var(--px));
+		height: calc(16 * var(--px));
+	}
+
+	.label {
+		display: flex;
+		flex-direction: column;
+		font-size: calc(14 * var(--px));
+		line-height: calc(20 * var(--px));
+		white-space: nowrap;
+	}
+
+	.name {
+		color: var(--color-text-primary);
+		font-weight: 700;
+	}
+
+	.detail {
+		color: var(--color-text-secondary);
+		font-weight: 500;
+	}
+</style>

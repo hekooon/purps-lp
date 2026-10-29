@@ -9,8 +9,6 @@ import type { ImageMetadata } from 'astro';
 // and the script nudges any that still land behind something marked
 // [data-floaters-avoid] out to the side. Place inside a positioned element;
 // this fills it and sits behind it.
-//
-// HeroRings.astro is the earlier take, with the images on two turning rings.
 const glob = (files: Record<string, { default: ImageMetadata }>) =>
 	Object.values(files).map((file) => file.default);
 const coins = glob(import.meta.glob('../assets/markets/*.png', { eager: true }));
