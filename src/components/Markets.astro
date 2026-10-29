@@ -2,7 +2,7 @@
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 import { markets } from '../data/markets';
-import moneyBall from '../assets/money-ball-lit.webp';
+import moneyBall from '../assets/money-ball-planet.webp';
 
 // Every market Purps lists, as icons on three rings orbiting the money ball
 // like planets, the inner ones faster, under a title. Hovering (or focusing)
@@ -88,7 +88,7 @@ const rings = [...radii.keys()].reverse().map((ring) => {
 			}
 		</div>
 		<div class="ball" aria-hidden="true">
-			<Image src={moneyBall} alt="" width={1400} />
+			<Image src={moneyBall} alt="" width={1200} />
 		</div>
 		<div class="tooltip" role="tooltip" aria-hidden="true">
 			<span class="ticker"></span>
@@ -138,8 +138,8 @@ const rings = [...radii.keys()].reverse().map((ring) => {
 	}
 
 	/* The ball sits over the rings (under the nav). Its image has a glow and
-	   shadow round the ball, which spans about 900 of its 2000px, centred on
-	   1005, 993, so it's scaled and shifted to put the ball itself --ball
+	   shadow round the ball, which spans about 1156 of its 2000px, centred on
+	   1003, 995, so it's scaled and shifted to put the ball itself --ball
 	   units across, dead centre; the glow and shadow spill out around it. */
 	.ball {
 		position: absolute;
@@ -154,9 +154,9 @@ const rings = [...radii.keys()].reverse().map((ring) => {
 
 	.ball img {
 		position: absolute;
-		top: calc(50% - 993 / 900 * 100%);
-		left: calc(50% - 1005 / 900 * 100%);
-		width: calc(2000 / 900 * 100%);
+		top: calc(50% - 995 / 1156 * 100%);
+		left: calc(50% - 1003 / 1156 * 100%);
+		width: calc(2000 / 1156 * 100%);
 		max-width: none;
 		height: auto;
 	}
