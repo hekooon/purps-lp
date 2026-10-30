@@ -51,7 +51,7 @@ html.intro-wait .subtitle {
    along its top edge. */
 :root {
   --glass-background: color-mix(in srgb, var(--color-text-primary) 3%, transparent);
-  --glass-blur: blur(32px) saturate(1.6);
+  --glass-blur: blur(48px) saturate(1.6);
   --glass-shadow:
     0 12px 40px rgb(0 0 0 / 0.4),
     inset 0 1px 0 color-mix(in srgb, var(--color-text-primary) 8%, transparent);

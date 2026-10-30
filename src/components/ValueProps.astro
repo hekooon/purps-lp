@@ -4,33 +4,33 @@ import TraderCards from './TraderCards.astro';
 import NotificationStack from './NotificationStack.astro';
 import FundingSheet from './FundingSheet.astro';
 import LeverageSlider from './LeverageSlider.astro';
-import officePhoto from '../assets/cards/office.png';
-import wallStreetPhoto from '../assets/cards/wall-street.jpg';
+import card1Photo from '../assets/cards/card-1.jpg';
+import card2Photo from '../assets/cards/card-2.jpg';
+import card3Photo from '../assets/cards/card-3.jpg';
+import card4Photo from '../assets/cards/card-4.jpg';
 
 // Value prop cards, one per row. Each sticks just under the nav as it
 // reaches it, so the next one scrolls up and lands on top of it, while the
 // one underneath shrinks and blurs away.
-// Placeholder images until the real ones are in, bar the live visuals. Every
-// card has a photo across its bottom half, the Wall Street desk or the
-// office, alternating.
+// Every card has a photo of its own across its bottom three quarters.
 const cards = [
 	{
 		title: 'Discover most profitable traders',
 		subtitle: 'Discover top traders. Follow the ones that are winning. No LARPing - just P&L.',
 		visual: TraderCards,
-		photo: wallStreetPhoto,
+		photo: card1Photo,
 	},
 	{
 		title: 'Real time notifications',
 		subtitle: 'The second your traders open a position, you know. Don’t miss out on your next trade.',
 		visual: NotificationStack,
-		photo: officePhoto,
+		photo: card2Photo,
 	},
 	{
 		title: 'Fund your account in seconds',
 		subtitle: 'Add funds with card, Apple Pay, or crypto and start trading in seconds.',
 		visual: FundingSheet,
-		photo: wallStreetPhoto,
+		photo: card3Photo,
 		// Its visual stands on the card's bottom edge (see the phone styles)
 		short: true,
 	},
@@ -38,7 +38,7 @@ const cards = [
 		title: 'Go long, go short, go bigger',
 		subtitle: 'Up or down, there’s always a trade. Trade with leverage across global markets.',
 		visual: LeverageSlider,
-		photo: officePhoto,
+		photo: card4Photo,
 	},
 ];
 ---
@@ -49,7 +49,7 @@ const cards = [
 		cards.map(({ title, subtitle, visual: Visual, photo, short }) => (
 			<article class:list={['card', { short }]}>
 				<div class="backdrop">
-					<Image src={photo} alt="" widths={[800, 1200, 1600, 2240]} sizes="(max-width: 1120px) 100vw, 1120px" quality={65} />
+					<Image src={photo} alt="" widths={[800, 1200, 1600, 2000]} sizes="(max-width: 1120px) 100vw, 1120px" quality={65} />
 				</div>
 				<div class="copy">
 					<h3>{title}</h3>
@@ -165,37 +165,31 @@ const cards = [
 		background: none;
 	}
 
-	/* The photo across the bottom half of the card, edge to edge, behind
-	   the text and visual, filling that whatever its shape, anchored to its
-	   top right like the Figma crop and fading in from the top. Served at
-	   quality 65: under the fade, the scrim and the glass, more doesn't show. */
+	/* The photo across the bottom three quarters of the card, edge to edge,
+	   behind the text and visual, filling that whatever its shape, centred.
+	   Served at quality 65: under the fade, the scrim and the glass, more
+	   doesn't show. */
 	.backdrop {
 		--parallax: 120px;
 		position: absolute;
 		right: 0;
 		bottom: 0;
 		left: 0;
-		height: 50%;
+		height: 75%;
 		overflow: hidden;
-		/* Fades in over its whole height, eased so there's no hard edge
-		   where it reaches full strength */
-		mask-image: linear-gradient(
-			to bottom,
-			transparent,
-			rgb(0 0 0 / 0.15) 20%,
-			rgb(0 0 0 / 0.4) 40%,
-			rgb(0 0 0 / 0.7) 65%,
-			#000 100%
-		);
 		pointer-events: none;
 	}
 
-	/* A 25% black scrim over the photo, under the text and visual */
+	/* Over the photo, under the text and visual: a fade along its top, from
+	   the card's background colour to clear over 30% of the card's height
+	   (30/75 of the photo's), and a 25% black scrim over it all */
 	.backdrop::after {
 		content: '';
 		position: absolute;
 		inset: 0;
-		background: rgb(0 0 0 / 0.25);
+		background:
+			linear-gradient(to bottom, var(--color-surface-neutral-bg), transparent calc(30% / 0.75)),
+			rgb(0 0 0 / 0.25);
 	}
 
 	/* Parallax: --parallax taller than its frame, and lifted by up to that
@@ -211,7 +205,7 @@ const cards = [
 		max-width: none;
 		height: calc(100% + var(--parallax));
 		object-fit: cover;
-		object-position: right top;
+		object-position: center;
 		translate: 0 var(--shift, 0);
 		will-change: translate;
 	}
