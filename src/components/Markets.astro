@@ -138,8 +138,8 @@ const rings = [...radii.keys()].reverse().map((ring) => {
 				animation-range: cover var(--fly-start, 0px) cover var(--fly-end, 0px);
 			}
 
-			/* The rings go out of focus and fade as the ball leaves them, more
-			   the further the page scrolls, keeping the eye on the ball */
+			/* The rings go out of focus, fade and grow as the ball leaves them,
+			   more the further the page scrolls, keeping the eye on the ball */
 			.orbits {
 				animation-name: defocus;
 				animation-timing-function: ease-in;
@@ -165,15 +165,17 @@ const rings = [...radii.keys()].reverse().map((ring) => {
 	}
 
 	/* From none (not blur(0)), so at rest there's no filter at all on the
-	   3D rings. They fade as they blur. */
+	   3D rings. They fade and grow as they blur, as if passing the camera. */
 	@keyframes defocus {
 		from {
 			filter: none;
 			opacity: 1;
+			scale: 1;
 		}
 		to {
 			filter: blur(56px);
 			opacity: 0.3;
+			scale: 1.3;
 		}
 	}
 
