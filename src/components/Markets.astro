@@ -2,8 +2,7 @@
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 import { markets } from '../data/markets';
-import moneyBall from '../assets/money-ball-planet.webp';
-import ballShadow from '../assets/money-ball-shadow.webp';
+import MoneyBall from './MoneyBall.astro';
 
 // Every market Purps lists, as icons on three rings orbiting the money ball
 // like planets, the inner ones faster, under a title. Hovering (or focusing)
@@ -88,12 +87,8 @@ const rings = [...radii.keys()].reverse().map((ring) => {
 				))
 			}
 		</div>
-		<div class="ball-shadow" aria-hidden="true">
-			<Image src={ballShadow} alt="" width={400} quality={60} />
-		</div>
-		<div class="ball" aria-hidden="true">
-			<Image src={moneyBall} alt="" width={1200} />
-		</div>
+		<div class="ball-shadow" aria-hidden="true"></div>
+		<MoneyBall class="ball" data-ball-start />
 		<div class="tooltip" role="tooltip" aria-hidden="true">
 			<span class="ticker"></span>
 			<span class="name"></span>
@@ -102,10 +97,84 @@ const rings = [...radii.keys()].reverse().map((ring) => {
 </section>
 
 <style>
+	/* Above the download section after it, so the ball lands on top of the
+	   app icon. Its view of the window drives the scroll animations below
+	   (and the icon's in DownloadCta), named page-wide. */
 	.markets {
+		position: relative;
+		z-index: 1;
 		max-width: var(--layout-max-width);
 		margin: 160px auto 0;
 		padding: var(--layout-padding);
+		view-timeline: --markets;
+	}
+
+	:global(body) {
+		timeline-scope: --markets;
+	}
+
+	/* The flight, where the browser has scroll animations and motion is
+	   fine: once the ball passes the middle of the window, it drops down to
+	   the app icon, shrinking, its eclipse light and its shadow on the rings
+	   fading. Eased, so it rides up with the page a little, then settles
+	   into the icon. The script measures the page and sets where it starts
+	   and ends (as distances into --markets). Driven by scrolling itself, on
+	   the compositor, so it keeps up with it exactly. */
+	@supports (animation-timeline: view()) {
+		@media (prefers-reduced-motion: no-preference) {
+			.rings :global(.ball) {
+				animation: fly ease-in-out both;
+				animation-timeline: --markets;
+				animation-range: cover var(--fly-start, 0px) cover var(--fly-end, 0px);
+			}
+
+			.ball-shadow {
+				animation: fade ease-in both;
+				animation-timeline: --markets;
+				animation-range: cover var(--fly-start, 0px) cover var(--fly-end, 0px);
+			}
+
+			/* The rings go out of focus and fade as the ball leaves them, more
+			   the further the page scrolls, keeping the eye on the ball */
+			.orbits {
+				animation: defocus ease-in both;
+				animation-timeline: --markets;
+				animation-range: cover var(--fly-start, 0px) cover var(--fly-end, 0px);
+			}
+		}
+	}
+
+	/* Off while the script measures the page */
+	:global(html.is-measuring) :is(.ball-shadow, .orbits),
+	:global(html.is-measuring .rings .ball),
+	:global(html.is-measuring .download-cta .icon) {
+		animation: none !important;
+	}
+
+	@keyframes fly {
+		to {
+			transform: translate(-50%, calc(-50% + var(--fly-gap, 0px))) scale(var(--fly-scale, 1));
+			--lit: 0;
+		}
+	}
+
+	/* From none (not blur(0)), so at rest there's no filter at all on the
+	   3D rings. They fade as they blur. */
+	@keyframes defocus {
+		from {
+			filter: none;
+			opacity: 1;
+		}
+		to {
+			filter: blur(56px);
+			opacity: 0.3;
+		}
+	}
+
+	@keyframes fade {
+		to {
+			opacity: 0;
+		}
 	}
 
 	h2 {
@@ -131,63 +200,41 @@ const rings = [...radii.keys()].reverse().map((ring) => {
 		--u: calc(100cqw / var(--diameter));
 	}
 
-	/* One 3D space for the orbits */
+	/* One 3D space for the orbits, over the ball */
 	.orbits {
 		position: absolute;
+		z-index: 1;
 		inset: 0;
 		perspective: 1600px;
 		transform-style: preserve-3d;
 		pointer-events: none;
 	}
 
-	/* The ball sits over the rings (under the nav). Its image has a glow and
-	   shadow round the ball, which spans about 1156 of its 2000px, centred on
-	   1003, 995, so it's scaled and shifted to put the ball itself --ball
-	   units across, dead centre; the glow and shadow spill out around it. */
-	.ball {
+	/* The ball, --ball units across, dead centre under the rings */
+	.rings :global(.ball) {
 		position: absolute;
-		z-index: 2;
+		z-index: 0;
 		top: 50%;
 		left: 50%;
 		width: calc(var(--ball) * var(--u));
-		aspect-ratio: 1;
-		translate: -50% -50%;
+		transform: translate(-50%, -50%);
 		pointer-events: none;
 	}
 
-	/* A fake shadow the ball casts on the rings: a soft dark disc behind it,
-	   up and to the right, over the rings but under the ball. Its solid core
-	   is about 604 of the image's 1125px, so at --shadow-scale times the
-	   ball's width that core comes out the size of the ball; --shadow-shift
-	   moves it out from the ball's centre as a share of the ball. Being all
-	   blur, it's served small (400px) and scaled up without losing anything. */
+	/* The shadow it casts on the rings, away from the light (top left): a
+	   soft dark disc down and to the right, falling over them */
 	.ball-shadow {
-		--shadow-scale: 1.86;
-		--shadow-shift: 0.3;
+		--shadow-shift: 0.28;
 		position: absolute;
-		z-index: 1;
-		top: calc(50% - var(--shadow-shift) * var(--ball) * var(--u));
+		z-index: 2;
+		top: calc(50% + var(--shadow-shift) * var(--ball) * var(--u));
 		left: calc(50% + var(--shadow-shift) * var(--ball) * var(--u));
-		width: calc(var(--shadow-scale) * var(--ball) * var(--u));
+		width: calc(1.9 * var(--ball) * var(--u));
 		aspect-ratio: 1;
-		translate: -50% -50%;
-		opacity: 0.9;
+		border-radius: 50%;
+		background: radial-gradient(closest-side, rgb(0 0 0 / 0.75) 45%, transparent);
+		transform: translate(-50%, -50%);
 		pointer-events: none;
-	}
-
-	.ball-shadow :global(img) {
-		display: block;
-		width: 100%;
-		height: 100%;
-	}
-
-	.ball img {
-		position: absolute;
-		top: calc(50% - 995 / 1156 * 100%);
-		left: calc(50% - 1003 / 1156 * 100%);
-		width: calc(2000 / 1156 * 100%);
-		max-width: none;
-		height: auto;
 	}
 
 	/* Each ring is an orbit round the ball, like planets round the sun: a
@@ -259,22 +306,16 @@ const rings = [...radii.keys()].reverse().map((ring) => {
 		animation-duration: var(--period);
 		animation-timing-function: linear;
 		animation-iteration-count: infinite;
-		transition:
-			scale 300ms cubic-bezier(0.16, 1, 0.3, 1),
-			filter 300ms ease-out;
+		transition: scale 300ms cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
-	/* The hovered icon grows by --hover-scale; every other one blurs */
+	/* The hovered icon grows by --hover-scale */
 	.rings {
 		--hover-scale: 1.25;
 	}
 
 	.coin:is(:hover, :focus-visible) :global(img) {
 		scale: var(--hover-scale);
-	}
-
-	.rings:has(.coin:is(:hover, :focus-visible)) .coin:not(:hover, :focus-visible) :global(img) {
-		filter: blur(4px);
 	}
 
 	.coin:focus-visible {
@@ -367,5 +408,54 @@ const rings = [...radii.keys()].reverse().map((ring) => {
 			coin.addEventListener('focus', () => show(coin));
 			coin.addEventListener('blur', hide);
 		}
+	}
+</script>
+
+<script>
+	// Where the flight starts and ends, as distances into the section's
+	// --markets timeline (which starts as its top enters the bottom of the
+	// window). Measured with the animations off, so from the layout as it
+	// is, and again whenever the window changes size. It starts as the ball
+	// reaches the middle of the window, and ends once the page has carried
+	// the icon up to where the ball was.
+
+	const section = document.querySelector<HTMLElement>('.markets');
+	const ball = section?.querySelector<HTMLElement>('[data-ball-start]');
+	const icon = document.querySelector<HTMLElement>('[data-ball-end]');
+
+	if (section && ball && icon) {
+		const root = document.documentElement;
+		const middle = (el: HTMLElement) => {
+			const r = el.getBoundingClientRect();
+			return { y: r.top + r.height / 2 + scrollY, size: r.width };
+		};
+
+		const measure = () => {
+			root.classList.add('is-measuring');
+			const vh = innerHeight;
+			const top = section.getBoundingClientRect().top + scrollY;
+			const from = middle(ball);
+			const to = middle(icon);
+			root.classList.remove('is-measuring');
+
+			// The timeline starts with the section's top at the bottom of the
+			// window: the ball is at height h in the window once the page has
+			// scrolled vh - h + (its distance below the section's top)
+			const start = vh / 2 + (from.y - top);
+			const gap = to.y - from.y;
+
+			const set = (name: string, value: number) => section.style.setProperty(name, `${value}px`);
+			set('--fly-start', start);
+			set('--fly-end', start + gap);
+			set('--fly-gap', gap);
+			section.style.setProperty('--fly-scale', `${to.size / from.size}`);
+			// The icon grows in over the second half of the flight
+			root.style.setProperty('--icon-start', `${start + gap / 2}px`);
+			root.style.setProperty('--icon-end', `${start + gap}px`);
+		};
+
+		measure();
+		addEventListener('resize', measure);
+		document.fonts?.ready.then(measure);
 	}
 </script>

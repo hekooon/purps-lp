@@ -1,0 +1,105 @@
+---
+import { getImage } from 'astro:assets';
+import ball from '../assets/money-ball-cutout.webp';
+
+// The money ball, lit in code like a planet in eclipse: light from behind
+// and to the top left, so a warm halo round it, a bright rim along its top
+// left edge, and its face falling into shadow towards the bottom right.
+// --lit (0 to 1) sets how strong the eclipse is: 1 in the orbit, 0 as the
+// app icon, where only a little shading is left for depth. The shading and
+// rim are masked by the ball's own cut-out, so they only ever touch the
+// ball. It fills the box it's put in (square).
+interface Props {
+	lit?: number;
+	width?: number;
+	class?: string;
+	[attribute: string]: unknown;
+}
+const { lit = 1, width = 800, class: className, ...attributes } = Astro.props;
+const image = await getImage({ src: ball, width, format: 'webp' });
+---
+
+<div
+	class:list={['money-ball', className]}
+	style={`--lit: ${lit}; --ball-mask: url("${image.src}")`}
+	aria-hidden="true"
+	{...attributes}
+>
+	<span class="halo"></span>
+	<img src={image.src} alt="" width={width} height={width} decoding="async" />
+	<span class="shade"></span>
+	<span class="rim"></span>
+</div>
+
+<style>
+	/* Registered so it can be animated (it fades out in flight) */
+	@property --lit {
+		syntax: '<number>';
+		inherits: true;
+		initial-value: 1;
+	}
+
+	.money-ball {
+		--lit: 1;
+		position: relative;
+		isolation: isolate;
+		aspect-ratio: 1;
+	}
+
+	.money-ball img {
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+
+	/* The eclipse glow behind it: warm, a little stronger to the top left
+	   where the light is, spilling well past the ball */
+	.halo {
+		position: absolute;
+		inset: -35%;
+		z-index: -1;
+		background: radial-gradient(
+			circle at 46% 45%,
+			rgb(255 232 190 / 0.32),
+			rgb(255 214 160 / 0.12) 30%,
+			transparent 58%
+		);
+		opacity: var(--lit);
+		pointer-events: none;
+	}
+
+	/* Shading and rim lie on the ball only, cut to its shape */
+	.shade,
+	.rim {
+		position: absolute;
+		inset: 0;
+		mask-image: var(--ball-mask);
+		mask-size: 100% 100%;
+		pointer-events: none;
+	}
+
+	/* The face turning away from the light: clear towards the top left,
+	   deep shadow at the bottom right. Some always stays, for depth. */
+	.shade {
+		background: radial-gradient(
+			circle at 30% 26%,
+			transparent 28%,
+			rgb(0 0 0 / 0.35) 58%,
+			rgb(0 0 0 / 0.85) 100%
+		);
+		opacity: calc(0.4 + 0.6 * var(--lit));
+	}
+
+	/* The light catching the top left edge: a thin warm crescent, from a
+	   ring of light centred down and to the right of the ball */
+	.rim {
+		background: radial-gradient(
+			circle at 60% 62%,
+			transparent 62%,
+			rgb(255 236 200 / 0.95) 74%,
+			rgb(255 236 200 / 0) 84%
+		);
+		mix-blend-mode: screen;
+		opacity: var(--lit);
+	}
+</style>

@@ -1,14 +1,16 @@
 ---
-import { Image } from 'astro:assets';
-import moneyBall from '../assets/money-ball.png';
+import MoneyBall from './MoneyBall.astro';
 
-// Closing download prompt: the app icon and a download button.
+// Closing download prompt: the app icon and a download button. On scroll
+// the ball from the orbit above flies down into the icon (see Markets), and
+// the icon's tile grows in to catch it; the icon's own ball is only for
+// where that doesn't run.
 ---
 
 <section class="download-cta">
 	<div class="content">
-		<div class="icon">
-			<Image src={moneyBall} alt="Purps app icon" width={300} />
+		<div class="icon" role="img" aria-label="Purps app icon">
+			<MoneyBall class="icon-ball" lit={0} width={240} data-ball-end />
 		</div>
 		<div class="cta">
 			<a class="download" href="#" data-download>Download app</a>
@@ -35,24 +37,44 @@ import moneyBall from '../assets/money-ball.png';
 		gap: 57px;
 	}
 
-	/* 120px app icon: the ball, zoomed in a little, on a dark tile */
+	/* 120px app icon: the ball, unlit, on a dark tile */
 	.icon {
 		position: relative;
+		display: grid;
+		place-items: center;
 		width: 120px;
 		height: 120px;
-		overflow: hidden;
 		border: 1px solid var(--color-border-default);
 		border-radius: 30px;
 		background: #171616;
 	}
 
-	.icon img {
-		position: absolute;
-		top: -9.5%;
-		left: -9.2%;
-		width: 126%;
-		max-width: none;
-		height: auto;
+	.icon :global(.icon-ball) {
+		width: 72%;
+	}
+
+	/* Grows in from a tenth of its size over the second half of the ball's
+	   flight, on the timeline and range Markets sets up. The ball itself
+	   arrives from the orbit, so the tile's own stays hidden. */
+	@supports (animation-timeline: view()) {
+		@media (prefers-reduced-motion: no-preference) {
+			.icon {
+				animation: grow-in ease-out both;
+				animation-timeline: --markets;
+				animation-range: cover var(--icon-start, 0px) cover var(--icon-end, 0px);
+			}
+
+			.icon :global(.icon-ball) {
+				visibility: hidden;
+			}
+		}
+	}
+
+	@keyframes grow-in {
+		from {
+			opacity: 0;
+			scale: 0.1;
+		}
 	}
 
 	.cta {
