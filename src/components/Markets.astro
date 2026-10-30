@@ -123,13 +123,17 @@ const rings = [...radii.keys()].reverse().map((ring) => {
 	@supports (animation-timeline: view()) {
 		@media (prefers-reduced-motion: no-preference) {
 			.rings :global(.ball) {
-				animation: fly ease-in-out both;
+				animation-name: fly;
+				animation-timing-function: ease-in-out;
+				animation-fill-mode: both;
 				animation-timeline: --markets;
 				animation-range: cover var(--fly-start, 0px) cover var(--fly-end, 0px);
 			}
 
 			.ball-shadow {
-				animation: fade ease-in both;
+				animation-name: fade;
+				animation-timing-function: ease-in;
+				animation-fill-mode: both;
 				animation-timeline: --markets;
 				animation-range: cover var(--fly-start, 0px) cover var(--fly-end, 0px);
 			}
@@ -137,7 +141,9 @@ const rings = [...radii.keys()].reverse().map((ring) => {
 			/* The rings go out of focus and fade as the ball leaves them, more
 			   the further the page scrolls, keeping the eye on the ball */
 			.orbits {
-				animation: defocus ease-in both;
+				animation-name: defocus;
+				animation-timing-function: ease-in;
+				animation-fill-mode: both;
 				animation-timeline: --markets;
 				animation-range: cover var(--fly-start, 0px) cover var(--fly-end, 0px);
 			}

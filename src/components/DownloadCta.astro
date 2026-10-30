@@ -59,7 +59,9 @@ import MoneyBall from './MoneyBall.astro';
 	@supports (animation-timeline: view()) {
 		@media (prefers-reduced-motion: no-preference) {
 			.icon {
-				animation: grow-in ease-out both;
+				animation-name: grow-in;
+				animation-timing-function: ease-out;
+				animation-fill-mode: both;
 				animation-timeline: --markets;
 				animation-range: cover var(--icon-start, 0px) cover var(--icon-end, 0px);
 			}
