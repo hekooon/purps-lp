@@ -370,6 +370,23 @@ const rings = [...radii.keys()].reverse().map((ring) => {
 		color: var(--color-text-secondary);
 		font: 500 13px / 18px var(--font-sans);
 	}
+
+	/* On phones the rings are drawn wider than the screen, so the icons stay
+	   a decent size, cropped at its edges, and pulled up closer under the
+	   title with the empty bottom of the square taken back too. A smaller
+	   title, so it takes three lines rather than four. */
+	@media (max-width: 600px) {
+		h2 {
+			margin-bottom: 32px;
+			font-size: 28px;
+		}
+
+		.rings {
+			width: 140%;
+			max-width: none;
+			margin: -18% -20% -18%;
+		}
+	}
 </style>
 
 <script>

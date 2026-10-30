@@ -220,9 +220,18 @@ const cards = [
 		}
 	}
 
+	/* On phones a card fits its content: its text, then a fixed-height box
+	   for the visual, rather than a nearly full-screen card with a tall empty
+	   band in the middle */
 	@media (max-width: 600px) {
 		.card {
-			gap: 24px;
+			gap: 32px;
+			height: auto;
+		}
+
+		.image {
+			flex: none;
+			height: 380px;
 		}
 	}
 </style>

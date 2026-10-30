@@ -50,7 +50,9 @@ const notifications = [
 	   if the card is too narrow for a 353-wide notification and some room
 	   either side. */
 	.screen {
-		--px: min(1.75px, calc((100cqw - 32px) / 353));
+		/* Never below 0.9px, so the text stays readable on a phone; there it
+		   runs a little into the card's padding */
+		--px: max(0.9px, min(1.75px, calc((100cqw - 32px) / 353)));
 		position: absolute;
 		top: calc(32 * var(--px));
 		bottom: 0;

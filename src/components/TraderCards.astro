@@ -77,6 +77,14 @@ const usd = (n: number) => `+$${(n / 1000).toFixed(1)}K`;
 <style>
 	/* Along the bottom of the card, inside its padding, in line with its
 	   text on the left and running off its right edge */
+	/* On phones the whole leaderboard is drawn smaller, so one and a half
+	   cards show */
+	@media (max-width: 600px) {
+		.trader-cards {
+			zoom: 0.78;
+		}
+	}
+
 	.trader-cards {
 		--card-width: 240px;
 		--card-gap: 12px;

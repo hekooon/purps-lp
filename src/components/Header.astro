@@ -173,10 +173,10 @@ const blurs = BLURS.map((radius, i) => ({
 		background: var(--color-button-primary-hover);
 	}
 
-	@media (max-width: 420px) {
-		nav,
+	/* On phones, just the logo and Download: the socials are in the footer */
+	@media (max-width: 600px) {
 		.socials {
-			gap: 16px;
+			display: none;
 		}
 	}
 </style>
