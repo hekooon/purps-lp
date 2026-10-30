@@ -90,7 +90,7 @@ const subtitle = stack2 + SUBTITLE_GAP;
 
 <style>
 	main {
-		padding: 0 16px 160px;
+		padding: 0 var(--page-gutter) 160px;
 		/* The floaters run the full window width */
 		overflow-x: clip;
 	}
@@ -187,6 +187,37 @@ const subtitle = stack2 + SUBTITLE_GAP;
 	   phone and its backdrop cover the whole window */
 	:global(html.demo-open) .hero {
 		z-index: 20;
+	}
+
+	/* On phones: the title without its stacks, at the same size as every
+	   other title and inset 16px more, and the space round the hero
+	   tightened */
+	@media (max-width: 600px) {
+		h1 {
+			padding: 0 16px;
+			font-size: var(--text-title-size);
+		}
+
+		h1 :global(.avatar-stack) {
+			display: none;
+		}
+
+		.subtitle {
+			margin-bottom: 64px;
+		}
+
+		.actions {
+			margin-top: 40px;
+		}
+
+		.download,
+		.demo {
+			height: 56px;
+		}
+
+		main {
+			padding-bottom: 48px;
+		}
 	}
 </style>
 

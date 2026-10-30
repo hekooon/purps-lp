@@ -24,7 +24,7 @@ import MoneyBall from './MoneyBall.astro';
 		position: relative;
 		display: grid;
 		place-items: center;
-		padding: 40px 16px 160px;
+		padding: 40px var(--page-gutter) 160px;
 		overflow: hidden;
 		background: var(--color-surface-neutral-bg);
 	}
@@ -115,5 +115,11 @@ import MoneyBall from './MoneyBall.astro';
 		color: var(--color-text-secondary);
 		font: var(--text-body-1);
 		font-feature-settings: 'lnum' 1, 'tnum' 1;
+	}
+
+	@media (max-width: 600px) {
+		.download {
+			height: 56px;
+		}
 	}
 </style>

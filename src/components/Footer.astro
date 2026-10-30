@@ -66,7 +66,7 @@ const links = [
 
 <style>
 	.footer {
-		padding: 0 16px;
+		padding: 0 var(--page-gutter);
 		background: var(--color-surface-neutral-bg);
 	}
 
@@ -193,6 +193,18 @@ const links = [
 
 	.legal a:hover {
 		color: var(--color-text-primary);
+	}
+
+	/* On phones the six links sit in two columns of three: the socials, then
+	   the rest */
+	@media (max-width: 600px) {
+		.links {
+			display: grid;
+			grid-template-columns: repeat(2, auto);
+			grid-template-rows: repeat(3, auto);
+			grid-auto-flow: column;
+			gap: 12px 64px;
+		}
 	}
 </style>
 

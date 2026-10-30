@@ -6,16 +6,19 @@
   box-sizing: border-box;
 }
 
-/* Layout: how wide the sections and nav get, and the inset inside the nav
-   and the cards. Halved on phones. */
+/* Layout: how wide the sections and nav get, the inset inside the nav and
+   the cards (halved on phones), and the page's own margin either side
+   (wider on phones, where nothing else sits inside it) */
 :root {
   --layout-max-width: 1120px;
   --layout-padding: 48px;
+  --page-gutter: 16px;
 }
 
 @media (max-width: 600px) {
   :root {
     --layout-padding: 24px;
+    --page-gutter: 24px;
   }
 }
 

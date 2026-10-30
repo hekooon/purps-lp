@@ -43,6 +43,13 @@
   --text-body-2: 500 12px / 16px var(--font-sans);
 }
 
+/* On phones every title, the hero's included, is the same 32px */
+@media (max-width: 600px) {
+  :root {
+    --text-title-size: 32px;
+  }
+}
+
 .text-hero {
   font: var(--text-hero);
   letter-spacing: var(--text-hero-letter-spacing);

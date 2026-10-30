@@ -31,6 +31,8 @@ const cards = [
 		subtitle: 'Add funds with card, Apple Pay, or crypto and start trading in seconds.',
 		visual: FundingSheet,
 		photo: wallStreetPhoto,
+		// Its visual stands on the card's bottom edge (see the phone styles)
+		short: true,
 	},
 	{
 		title: 'Go long, go short, go bigger',
@@ -44,8 +46,8 @@ const cards = [
 <section class="value-props">
 	<h2 class="title">Read the market<br />like it’s your group chat</h2>
 	{
-		cards.map(({ title, subtitle, visual: Visual, photo }) => (
-			<article class="card">
+		cards.map(({ title, subtitle, visual: Visual, photo, short }) => (
+			<article class:list={['card', { short }]}>
 				<div class="backdrop">
 					<Image src={photo} alt="" widths={[800, 1200, 1600, 2240]} sizes="(max-width: 1120px) 100vw, 1120px" quality={65} />
 				</div>
@@ -220,18 +222,50 @@ const cards = [
 		}
 	}
 
-	/* On phones a card fits its content: its text, then a fixed-height box
-	   for the visual, rather than a nearly full-screen card with a tall empty
-	   band in the middle */
+	/* On phones: a plain list of cards, edge to edge across the screen and
+	   flush against each other, divided by a line along each one's top. No
+	   sticking or stacking, corners or clipping. All the same height, the
+	   first card's: 40px in from top and bottom (24px at the sides), the
+	   text, then the visual in what's left. The last has a line along its
+	   bottom too. */
 	@media (max-width: 600px) {
+		.value-props {
+			gap: 0;
+			margin-top: 96px;
+		}
+
+		.title {
+			margin-bottom: 24px;
+			padding: 0;
+		}
+
 		.card {
+			position: relative;
+			top: auto;
+			margin: 0 calc(-1 * var(--page-gutter));
+			padding: 40px var(--layout-padding);
+			border: 0;
+			border-top: 0.5px solid var(--color-border-default);
+			border-radius: 0;
+			overflow: visible;
 			gap: 32px;
-			height: auto;
+			height: 520px;
+			transform: none;
+			filter: none;
+		}
+
+		.card:last-child {
+			border-bottom: 0.5px solid var(--color-border-default);
 		}
 
 		.image {
-			flex: none;
-			height: 380px;
+			flex: 1;
+			height: auto;
+		}
+
+		/* The add-money sheet still stands on the card's bottom edge */
+		.card.short .image :global(.sheet) {
+			bottom: -40px;
 		}
 	}
 </style>

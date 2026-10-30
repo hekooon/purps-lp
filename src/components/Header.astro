@@ -59,7 +59,7 @@ const blurs = BLURS.map((radius, i) => ({
 		align-items: center;
 		height: 96px;
 		/* Same page margin as main, so the bar lines up with the sections */
-		padding: 0 16px;
+		padding: 0 var(--page-gutter);
 		transition: translate 600ms cubic-bezier(0.2, 0, 0, 1);
 	}
 
@@ -177,6 +177,14 @@ const blurs = BLURS.map((radius, i) => ({
 	@media (max-width: 600px) {
 		.socials {
 			display: none;
+		}
+	}
+
+	/* On phones the logo and Download sit on the page's 16px edge, in line
+	   with the video and the cards */
+	@media (max-width: 600px) {
+		.bar {
+			padding: 0;
 		}
 	}
 </style>

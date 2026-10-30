@@ -371,20 +371,26 @@ const rings = [...radii.keys()].reverse().map((ring) => {
 		font: 500 13px / 18px var(--font-sans);
 	}
 
-	/* On phones the rings are drawn wider than the screen, so the icons stay
+	/* On phones the rings are drawn twice as wide as the screen, so the icons stay
 	   a decent size, cropped at its edges, and pulled up closer under the
-	   title with the empty bottom of the square taken back too. A smaller
-	   title, so it takes three lines rather than four. */
+	   title with the empty bottom of the square taken back too. The title
+	   is inset 16px more, like the others. */
 	@media (max-width: 600px) {
 		h2 {
-			margin-bottom: 32px;
-			font-size: 28px;
+			margin-bottom: 80px;
+			padding: 0 16px;
 		}
 
 		.rings {
-			width: 140%;
+			width: 210%;
 			max-width: none;
-			margin: -18% -20% -18%;
+			margin: -27% -55% -27%;
+		}
+	}
+
+	@media (max-width: 600px) {
+		.markets {
+			margin-top: 96px;
 		}
 	}
 </style>
