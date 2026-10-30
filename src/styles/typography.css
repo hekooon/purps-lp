@@ -9,9 +9,18 @@
      keeps it on one row inside the page's 16px margins */
   --text-hero-size: clamp(24px, calc((100vw - 32px) / 11.1), 72px);
   --text-hero-line-height: 1.1;
-  --text-hero-letter-spacing: -0.03em;
+  --text-hero-letter-spacing: -0.02em;
   --text-hero: var(--text-hero-weight) var(--text-hero-size) / var(--text-hero-line-height)
     var(--text-hero-family);
+
+  /* Title: section titles */
+  --text-title-family: var(--font-serif);
+  --text-title-weight: 700;
+  --text-title-size: clamp(32px, 5.5vw, 60px);
+  --text-title-line-height: 1.1;
+  --text-title-letter-spacing: -0.02em;
+  --text-title: var(--text-title-weight) var(--text-title-size) / var(--text-title-line-height)
+    var(--text-title-family);
 
   /* Subtitle: supporting copy under a title */
   --text-subtitle-family: var(--font-sans);
@@ -20,6 +29,18 @@
   --text-subtitle-line-height: 1.35;
   --text-subtitle: var(--text-subtitle-weight) var(--text-subtitle-size) /
     var(--text-subtitle-line-height) var(--text-subtitle-family);
+
+  /* Heading: small headings (Figma: Satoshi Bold 17/24) */
+  --text-heading: 700 17px / 24px var(--font-sans);
+
+  /* Body 1: running text (Figma: Satoshi Medium 14/20) */
+  --text-body-1: 500 14px / 20px var(--font-sans);
+
+  /* Label 1: headings and labels (Figma: Satoshi Bold 14/20) */
+  --text-label-1: 700 14px / 20px var(--font-sans);
+
+  /* Body 2: small running text (Figma: Satoshi Medium 12/16) */
+  --text-body-2: 500 12px / 16px var(--font-sans);
 }
 
 .text-hero {
@@ -27,6 +48,27 @@
   letter-spacing: var(--text-hero-letter-spacing);
 }
 
+.text-title {
+  font: var(--text-title);
+  letter-spacing: var(--text-title-letter-spacing);
+}
+
 .text-subtitle {
   font: var(--text-subtitle);
+}
+
+.text-heading {
+  font: var(--text-heading);
+}
+
+.text-body-1 {
+  font: var(--text-body-1);
+}
+
+.text-label-1 {
+  font: var(--text-label-1);
+}
+
+.text-body-2 {
+  font: var(--text-body-2);
 }

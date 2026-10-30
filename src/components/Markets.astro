@@ -89,7 +89,7 @@ const rings = [...radii.keys()].reverse().map((ring) => {
 			}
 		</div>
 		<div class="ball-shadow" aria-hidden="true">
-			<Image src={ballShadow} alt="" width={800} />
+			<Image src={ballShadow} alt="" width={400} quality={60} />
 		</div>
 		<div class="ball" aria-hidden="true">
 			<Image src={moneyBall} alt="" width={1200} />
@@ -110,10 +110,9 @@ const rings = [...radii.keys()].reverse().map((ring) => {
 
 	h2 {
 		max-width: 880px;
-		margin: 0 auto 48px;
-		font-size: clamp(32px, 5.5vw, 56px);
-		line-height: 1;
-		letter-spacing: -0.02em;
+		margin: 0 auto 64px;
+		font: var(--text-title);
+		letter-spacing: var(--text-title-letter-spacing);
 		text-align: center;
 	}
 
@@ -160,7 +159,8 @@ const rings = [...radii.keys()].reverse().map((ring) => {
 	   up and to the right, over the rings but under the ball. Its solid core
 	   is about 604 of the image's 1125px, so at --shadow-scale times the
 	   ball's width that core comes out the size of the ball; --shadow-shift
-	   moves it out from the ball's centre as a share of the ball. */
+	   moves it out from the ball's centre as a share of the ball. Being all
+	   blur, it's served small (400px) and scaled up without losing anything. */
 	.ball-shadow {
 		--shadow-scale: 1.86;
 		--shadow-shift: 0.3;

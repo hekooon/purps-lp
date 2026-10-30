@@ -9,29 +9,29 @@ import qrCode from '../assets/qr-code.svg';
 // Download dialog: a QR code to scan with a phone, plus a pill button for each app
 // store. Opens from any element marked [data-download]; closes from the
 // × button, the backdrop or Escape. The QR code and store links are placeholders until the
-// apps are live.
+// apps are live. Its images load lazily, so only once it's first opened.
 ---
 
-<dialog class="download-modal" aria-labelledby="download-modal-title">
+<dialog class="download-modal" aria-labelledby="download-modal-title" tabindex="-1">
 	<button class="close" type="button" aria-label="Close">
 		<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
 			<path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
 		</svg>
 	</button>
 
-	<h2 id="download-modal-title">Download the app</h2>
+	<h2 id="download-modal-title">Get Purps</h2>
 
 	<div class="qr-frame">
-		<img class="qr" src={qrCode.src} alt="QR code to download Purps" width="200" height="200" />
+		<img class="qr" src={qrCode.src} alt="QR code to download Purps" width="200" height="200" loading="lazy" />
 	</div>
 
 	<div class="stores">
 		<a class="store" href="#">
-			<img class="store-icon" src={appStore.src} alt="" width="24" height="24" />
+			<img class="store-icon" src={appStore.src} alt="" width="24" height="24" loading="lazy" />
 			iOS
 		</a>
 		<a class="store" href="#">
-			<img class="store-icon" src={googlePlay.src} alt="" width="24" height="24" />
+			<img class="store-icon" src={googlePlay.src} alt="" width="24" height="24" loading="lazy" />
 			Android
 		</a>
 	</div>
@@ -40,12 +40,13 @@ import qrCode from '../assets/qr-code.svg';
 <style>
 	.download-modal {
 		width: min(480px, calc(100vw - 32px));
-		padding: 40px 32px 32px;
+		padding: 40px;
 		border: 0;
 		border-radius: 24px;
 		background: var(--color-surface-neutral-bg);
 		color: var(--color-text-primary);
 		text-align: left;
+		outline: none;
 	}
 
 	.download-modal[open] {
@@ -61,6 +62,18 @@ import qrCode from '../assets/qr-code.svg';
 		animation: backdrop-in 200ms ease-out;
 	}
 
+	/* Closing plays the opening in reverse; the script closes the dialog for
+	   real once it's done. Their own keyframes, as reusing the opening's
+	   wouldn't restart them: the browser would just flip the finished
+	   animation round and jump to its end. */
+	.download-modal.is-closing {
+		animation: modal-out 200ms cubic-bezier(1, 0, 0.8, 1) forwards;
+	}
+
+	.download-modal.is-closing::backdrop {
+		animation: backdrop-out 200ms ease-in forwards;
+	}
+
 	@keyframes modal-in {
 		from {
 			opacity: 0;
@@ -74,17 +87,35 @@ import qrCode from '../assets/qr-code.svg';
 		}
 	}
 
+	@keyframes modal-out {
+		to {
+			opacity: 0;
+			transform: translateY(8px) scale(0.97);
+		}
+	}
+
+	@keyframes backdrop-out {
+		to {
+			opacity: 0;
+		}
+	}
+
 	@media (prefers-reduced-motion: reduce) {
 		.download-modal[open],
-		.download-modal[open]::backdrop {
+		.download-modal[open]::backdrop,
+		.download-modal.is-closing,
+		.download-modal.is-closing::backdrop {
 			animation: none;
 		}
 	}
 
+	/* The × itself sits 15px inside its 40px box (a 20px icon centred in it,
+	   drawn across the middle half), so the box is pulled 15px out of the
+	   modal's padding to line the × up with the 40px edge */
 	.close {
 		position: absolute;
-		top: 16px;
-		right: 16px;
+		top: 25px;
+		right: 25px;
 		display: grid;
 		place-items: center;
 		width: 40px;
@@ -102,7 +133,7 @@ import qrCode from '../assets/qr-code.svg';
 	}
 
 	h2 {
-		margin: 0 0 32px;
+		margin: 0 0 24px;
 		font-size: 32px;
 		line-height: 1;
 		letter-spacing: -0.02em;
@@ -111,7 +142,7 @@ import qrCode from '../assets/qr-code.svg';
 	/* Full-width outlined panel with the code centred in it */
 	.qr-frame {
 		margin-bottom: 24px;
-		padding: 64px 0;
+		padding: 40px 0;
 		border: 0.5px solid var(--color-border-default);
 		border-radius: 12px;
 	}
@@ -138,15 +169,15 @@ import qrCode from '../assets/qr-code.svg';
 		height: 64px;
 		padding: 0 16px;
 		border-radius: 999px;
-		background: var(--color-surface-neutral-container);
-		color: var(--color-text-primary);
+		background: var(--color-text-primary);
+		color: var(--color-text-on-color);
 		font: 700 17px / 24px var(--font-sans);
 		text-decoration: none;
 		white-space: nowrap;
 	}
 
 	.store:hover {
-		background: var(--color-button-secondary-hover);
+		background: var(--color-button-primary-hover);
 	}
 
 	.store-icon {
@@ -167,10 +198,35 @@ import qrCode from '../assets/qr-code.svg';
 			trigger.addEventListener('click', (event) => {
 				event.preventDefault();
 				modal.showModal();
+				// Focus the dialog itself rather than its close button, which
+				// would otherwise open with a focus ring
+				modal.focus();
 			});
 		}
 
-		modal.querySelector('.close')?.addEventListener('click', () => modal.close());
+		// Plays the closing animation, then closes. Without motion there's
+		// nothing to wait for.
+		const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+		const close = () => {
+			if (!modal.open || modal.classList.contains('is-closing')) return;
+			if (reducedMotion.matches) return modal.close();
+			modal.classList.add('is-closing');
+			modal.addEventListener(
+				'animationend',
+				() => {
+					modal.classList.remove('is-closing');
+					modal.close();
+				},
+				{ once: true },
+			);
+		};
+
+		modal.querySelector('.close')?.addEventListener('click', close);
+		// Escape too, instead of the browser closing it at once
+		modal.addEventListener('cancel', (event) => {
+			event.preventDefault();
+			close();
+		});
 
 		// A click on the backdrop lands on the dialog itself, outside its box
 		modal.addEventListener('click', (event) => {
@@ -180,7 +236,7 @@ import qrCode from '../assets/qr-code.svg';
 				event.clientX <= box.right &&
 				event.clientY >= box.top &&
 				event.clientY <= box.bottom;
-			if (event.target === modal && !inside) modal.close();
+			if (event.target === modal && !inside) close();
 		});
 	}
 </script>

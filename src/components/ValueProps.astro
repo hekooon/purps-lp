@@ -3,6 +3,7 @@ import { Image } from 'astro:assets';
 import TraderCards from './TraderCards.astro';
 import NotificationStack from './NotificationStack.astro';
 import FundingSheet from './FundingSheet.astro';
+import LeverageSlider from './LeverageSlider.astro';
 import officePhoto from '../assets/cards/office.png';
 import wallStreetPhoto from '../assets/cards/wall-street.jpg';
 
@@ -34,21 +35,23 @@ const cards = [
 	{
 		title: 'Go long, go short, go bigger',
 		subtitle: 'Up or down, there’s always a trade. Trade with leverage across global markets.',
+		visual: LeverageSlider,
 		photo: officePhoto,
 	},
 ];
 ---
 
 <section class="value-props">
+	<h2 class="title">Read the market<br />like it’s your group chat</h2>
 	{
 		cards.map(({ title, subtitle, visual: Visual, photo }) => (
 			<article class="card">
 				<div class="backdrop">
-					<Image src={photo} alt="" widths={[800, 1200, 1600, 2240]} sizes="(max-width: 1120px) 100vw, 1120px" />
+					<Image src={photo} alt="" widths={[800, 1200, 1600, 2240]} sizes="(max-width: 1120px) 100vw, 1120px" quality={65} />
 				</div>
 				<div class="copy">
-					<h2>{title}</h2>
-					<p class="text-subtitle">{subtitle}</p>
+					<h3>{title}</h3>
+					<p>{subtitle}</p>
 				</div>
 				{Visual ? (
 					<div class="image is-live">
@@ -65,12 +68,13 @@ const cards = [
 </section>
 
 <style>
+	/* 96px between the cards, less under the title */
 	.value-props {
 		display: flex;
 		flex-direction: column;
 		gap: 96px;
 		max-width: var(--layout-max-width);
-		margin: 160px auto 0;
+		margin: 240px auto 0;
 	}
 
 	/* Sticks 24px under the 96px nav. Cards later in the page paint over
@@ -108,17 +112,34 @@ const cards = [
 		position: relative;
 	}
 
-	h2 {
-		margin: 0 0 12px;
-		font-size: clamp(28px, 4vw, 40px);
-		line-height: 1;
-		letter-spacing: -0.02em;
+	/* The section's title, over the cards, inset like their copy so it
+	   lines up with their titles */
+	.title {
+		max-width: 880px;
+		margin: 0;
+		padding: 0 var(--layout-padding);
+		font: var(--text-title);
+		letter-spacing: var(--text-title-letter-spacing);
+		/* Takes back part of the 96px gap, leaving 48 */
+		margin-bottom: -48px;
 	}
 
-	p {
-		max-width: 560px;
+	/* Title and subtitle read as one block: both set like the hero's
+	   subheading (the subtitle style, a step up), with no gap between, the
+	   title bold in the primary colour and the subtitle medium in the
+	   tertiary */
+	h3,
+	.copy p {
 		margin: 0;
-		color: var(--color-text-secondary);
+		font: var(--text-subtitle);
+		font-size: clamp(17px, 4.1vw, 24px);
+		font-weight: 700;
+	}
+
+	.copy p {
+		max-width: 560px;
+		color: var(--color-text-tertiary);
+		font-weight: 500;
 	}
 
 	.image {
@@ -144,7 +165,8 @@ const cards = [
 
 	/* The photo across the bottom half of the card, edge to edge, behind
 	   the text and visual, filling that whatever its shape, anchored to its
-	   top right like the Figma crop and fading in from the top */
+	   top right like the Figma crop and fading in from the top. Served at
+	   quality 65: under the fade, the scrim and the glass, more doesn't show. */
 	.backdrop {
 		--parallax: 120px;
 		position: absolute;

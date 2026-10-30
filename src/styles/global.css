@@ -42,23 +42,27 @@ html.intro-wait .subtitle {
 }
 
 /* Glass: the see-through panels laid over the value prop photos (the
-   notifications, the trader cards and the add-money sheet). A faint wash of
-   the text colour that blurs what's behind, and a soft shadow. */
+   trader cards, the notifications, the add-money sheet and the leverage
+   panel). A faint wash of the text colour that blurs what's behind, a
+   shadow strong enough to lift it off the dark card, and a faint highlight
+   along its top edge. */
 :root {
   --glass-background: color-mix(in srgb, var(--color-text-primary) 3%, transparent);
   --glass-blur: blur(32px) saturate(1.6);
-  --glass-shadow: 0 8px 48px rgb(0 0 0 / 0.25);
+  --glass-shadow:
+    0 12px 40px rgb(0 0 0 / 0.4),
+    inset 0 1px 0 color-mix(in srgb, var(--color-text-primary) 8%, transparent);
 }
 
 /* Every button presses in a little and eases its hover colour: the pills
-   (Download, Try demo, the store buttons) and the close buttons */
-:where(.download, .demo, .store, .close, .demo-close) {
+   (Download, Try demo, Go to Home, the store buttons) and the close buttons */
+:where(.download, .demo, .home, .store, .close, .demo-close) {
   transition:
     scale 100ms ease-out,
     background-color 150ms ease-out;
 }
 
-:where(.download, .demo, .store, .close, .demo-close):active {
+:where(.download, .demo, .home, .store, .close, .demo-close):active {
   scale: 0.97;
 }
 
@@ -68,6 +72,8 @@ body {
   background-color: var(--color-surface-neutral-bg);
   color: var(--color-text-primary);
   font-family: var(--font-sans);
+  /* Medium is the lightest Satoshi weight loaded, so it's the default */
+  font-weight: 500;
   /* Light text on a dark background renders heavy and fuzzy with macOS's
      default subpixel smoothing; greyscale antialiasing keeps it crisp. Use
      the fonts' kerning and ligatures, and never fake a missing weight. */
@@ -86,14 +92,59 @@ body {
    browser from an SVG filter, fixed to the window so it stays put as the page
    scrolls, faint enough to texture the dark background without muddying
    the text. Purely decorative; it never takes a click. */
+:root {
+  --film-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
 body::after {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 1000;
   pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  opacity: 0.06;
+  background-image: var(--film-grain);
+  opacity: 0.05;
+}
+
+/* An open dialog sits in the top layer, above everything on the page,
+   grain included, so it gets its own over its box. Fixed to the window
+   like the page's, the two tiles line up. */
+dialog::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: var(--film-grain);
+  background-attachment: fixed;
+  opacity: 0.05;
+}
+
+/* Rolling digits (utils/roll): each character in its own place, which runs
+   a little above and below the line and fades out at both ends, so a digit
+   rolling in or out fades away rather than being cut off. On the leaderboard
+   PnL and the leverage number. */
+.rolling .slot {
+  --bleed: 0.2em;
+  position: relative;
+  display: inline-block;
+  margin: calc(-1 * var(--bleed)) 0;
+  padding: var(--bleed) 0;
+  overflow: hidden;
+  vertical-align: top;
+  mask-image: linear-gradient(transparent, #000 22%, #000 78%, transparent);
+}
+
+.rolling .slot > span {
+  display: block;
+  will-change: transform;
+}
+
+.rolling .slot > span.out {
+  position: absolute;
+  top: var(--bleed);
+  left: 0;
+  width: 100%;
 }
 
 h1,

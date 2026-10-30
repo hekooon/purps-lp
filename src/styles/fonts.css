@@ -1,14 +1,6 @@
-/* The site uses only these two families: Satoshi for UI and body text,
-   Libre Caslon Condensed (bold only) for display type. WOFF2 files live in
+/* The site uses only these two families: Satoshi (Medium and Bold) for UI
+   and body text, Libre Caslon Condensed (bold only) for display type. WOFF2 files live in
    public/fonts and are preloaded in Layout.astro. */
-
-@font-face {
-  font-family: 'Satoshi';
-  src: url('/fonts/Satoshi-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
 
 @font-face {
   font-family: 'Satoshi';

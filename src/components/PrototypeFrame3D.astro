@@ -189,6 +189,11 @@ const extrusion = Array.from({ length: LAYERS }, (_, i) => ({
 		cursor: pointer;
 	}
 
+	/* The circular touch cursor (TouchCursor) only in the demo */
+	.prototype.is-demo .phone {
+		cursor: var(--touch-cursor);
+	}
+
 	/* The page doesn't scroll behind the demo */
 	:global(html.demo-open) {
 		overflow: hidden;

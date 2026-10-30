@@ -1,0 +1,84 @@
+---
+import { Image } from 'astro:assets';
+import still from '../assets/video-still.webp';
+
+// Video: a 16:9 frame as wide as the section, showing a still from it with a
+// play button in the middle. A placeholder until the video is ready; the
+// button does nothing yet.
+---
+
+<section class="video">
+	<div class="frame">
+		<Image
+			class="still"
+			src={still}
+			alt=""
+			widths={[800, 1120, 1600, 2000]}
+			sizes="(max-width: 1120px) 100vw, 1120px"
+		/>
+		<button class="play" type="button" aria-label="Play video">
+			<!-- Shifted so the triangle sits a touch right of centre, which looks centred -->
+			<svg viewBox="1.5 0 24 24" width="32" height="32" aria-hidden="true">
+				<path d="M8 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 8 5.5Z" />
+			</svg>
+		</button>
+	</div>
+</section>
+
+<style>
+	.video {
+		max-width: var(--layout-max-width);
+		margin: 160px auto 0;
+	}
+
+	/* Rounded and outlined like the value prop cards */
+	.frame {
+		position: relative;
+		display: grid;
+		place-items: center;
+		aspect-ratio: 16 / 9;
+		overflow: hidden;
+		border: 0.5px solid var(--color-border-default);
+		border-radius: 24px;
+		background: var(--color-surface-neutral-container);
+	}
+
+	/* Fills the frame, cropped a sliver to fit 16:9 */
+	.still {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	/* The primary pill colours, as a circle */
+	.play {
+		position: relative;
+		display: grid;
+		place-items: center;
+		width: 96px;
+		height: 96px;
+		padding: 0;
+		border: 0;
+		border-radius: 999px;
+		background: var(--color-text-primary);
+		color: var(--color-text-on-color);
+		cursor: pointer;
+		transition:
+			scale 100ms ease-out,
+			background-color 150ms ease-out;
+	}
+
+	.play:hover {
+		background: var(--color-button-primary-hover);
+	}
+
+	.play:active {
+		scale: 0.97;
+	}
+
+	.play svg {
+		fill: currentColor;
+	}
+</style>

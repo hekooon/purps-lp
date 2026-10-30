@@ -1,0 +1,312 @@
+---
+// The leverage picker from the trade screen, playing itself: a ruler slides
+// under a fixed marker to a random leverage between 10x and 30x, the number
+// counting with it. There Short or Long (taking turns) gets clicked, the
+// number taking its colour, and then it slides on to the next, for as long
+// as it's on screen.
+// Laid out in design pixels (a 353-wide card, 288 tall) in --px, so it
+// scales to fit the space it's given either way.
+// The leverages it picks between
+const MIN = 10;
+const MAX = 30;
+// The ruler runs from 0x to RULER: a tick for every step and one between
+// each, a long one every 5x, labelled from 5x up
+const RULER = 40;
+const ticks = Array.from({ length: RULER * 2 + 1 }, (_, i) => {
+	const value = i / 2;
+	return { value, major: value % 5 === 0 };
+});
+// Design pixels between ticks
+const STEP = 8;
+---
+
+<div class="leverage" aria-hidden="true" data-min={MIN} data-max={MAX}>
+	<div class="panel">
+		<p class="label">Leverage</p>
+		<p class="amount"><span class="value rolling">{MIN}x</span></p>
+
+		<div class="slider" style={`--step: ${STEP}`}>
+			<div class="ruler">
+				{
+					ticks.map(({ value, major }, i) => (
+						<span class:list={['tick', { major }]} style={`--i: ${i}`}>
+							{major && value > 0 && (
+								<span class="mark" data-value={value}>
+									{value}x
+								</span>
+							)}
+						</span>
+					))
+				}
+			</div>
+			<span class="marker"></span>
+		</div>
+
+		<div class="sides">
+			<span class="side short">Short</span>
+			<span class="side long">Long</span>
+		</div>
+	</div>
+</div>
+
+<style>
+	/* Fills the visual's box, and measures it both ways for --px: one design
+	   pixel, as big as 1.5px, smaller if the box is too narrow or too short
+	   for the card and some room round it */
+	.leverage {
+		position: absolute;
+		inset: 0;
+		container-type: size;
+	}
+
+	/* Centred, glass like the other visuals' panels */
+	.panel {
+		--px: min(1.5px, calc((100cqw - 32px) / 353), calc((100cqh - 32px) / 288));
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		width: calc(353 * var(--px));
+		padding: calc(24 * var(--px));
+		border-radius: calc(32 * var(--px));
+		background: var(--glass-background);
+		backdrop-filter: var(--glass-blur);
+		box-shadow: var(--glass-shadow);
+		/* One transform: the minifier drops a separate translate beside one */
+		transform: translate(-50%, -50%);
+		font-feature-settings: 'lnum' 1, 'tnum' 1;
+	}
+
+	.label {
+		margin: 0;
+		color: var(--color-text-tertiary);
+		font: 500 calc(14 * var(--px)) / calc(20 * var(--px)) var(--font-sans);
+	}
+
+	/* The number, in the colour of the side clicked while it's held there.
+	   Satoshi's fixed-width figures, so the digits don't shift as they change. */
+	.amount {
+		margin: calc(4 * var(--px)) 0 0;
+		color: var(--color-text-primary);
+		font: 700 calc(48 * var(--px)) / calc(56 * var(--px)) var(--font-sans);
+		font-variant-numeric: tabular-nums;
+		letter-spacing: -0.02em;
+		transition: color 300ms ease-out;
+	}
+
+	.leverage.is-long .amount {
+		color: var(--color-text-positive);
+	}
+
+	.leverage.is-short .amount {
+		color: var(--color-text-negative);
+	}
+
+	/* A window onto the ruler, faded out at both ends, with the marker fixed
+	   in its middle. The ruler slides under it: the script sets --at, how
+	   many ticks along from 0x the marker is. */
+	.slider {
+		position: relative;
+		width: 100%;
+		height: calc(72 * var(--px));
+		margin-top: calc(8 * var(--px));
+		overflow: hidden;
+		mask-image: linear-gradient(to right, transparent, #000 25%, #000 75%, transparent);
+	}
+
+	/* 8px down, so the taller marker has room above it inside the window */
+	.ruler {
+		--at: 0;
+		position: absolute;
+		top: calc(8 * var(--px));
+		left: 50%;
+		height: calc(40 * var(--px));
+		transform: translateX(calc(-1 * var(--at) * var(--step) * var(--px)));
+	}
+
+	/* Standing on a shared baseline, a step apart */
+	.tick {
+		position: absolute;
+		bottom: 0;
+		left: calc(var(--i) * var(--step) * var(--px));
+		width: calc(2 * var(--px));
+		height: calc(16 * var(--px));
+		border-radius: 999px;
+		background: var(--color-text-tertiary);
+		opacity: 0.5;
+		translate: -50% 0;
+	}
+
+	.tick.major {
+		height: calc(32 * var(--px));
+		background: var(--color-text-secondary);
+		opacity: 0.8;
+	}
+
+	/* 5x, 10x … under the long ticks; the one at the marker lights up */
+	.mark {
+		position: absolute;
+		top: calc(100% + 8 * var(--px));
+		left: 50%;
+		color: var(--color-text-tertiary);
+		font: 700 calc(12 * var(--px)) / calc(16 * var(--px)) var(--font-sans);
+		white-space: nowrap;
+		transform: translateX(-50%);
+		transition: color 200ms ease-out;
+	}
+
+	.mark.is-on {
+		color: var(--color-text-primary);
+	}
+
+	/* Fixed in the middle, taller than the rest */
+	.marker {
+		position: absolute;
+		bottom: calc(24 * var(--px));
+		left: 50%;
+		width: calc(3 * var(--px));
+		height: calc(44 * var(--px));
+		border-radius: 999px;
+		background: var(--color-text-primary);
+		transform: translateX(-50%);
+	}
+
+	.sides {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: calc(8 * var(--px));
+		width: 100%;
+		margin-top: calc(24 * var(--px));
+	}
+
+	/* Short and Long, the colours of a loss and a gain */
+	.side {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		height: calc(52 * var(--px));
+		border-radius: 999px;
+		color: var(--color-text-on-color);
+		font: 700 calc(17 * var(--px)) / calc(24 * var(--px)) var(--font-sans);
+		transition: opacity 300ms ease-out;
+	}
+
+	.short {
+		background: var(--color-surface-color-negative);
+	}
+
+	.long {
+		background: var(--color-surface-color-positive);
+	}
+
+	/* The side clicked presses in and springs back (the only change of size
+	   anywhere here); the other fades while it's held */
+	.leverage.is-long .short,
+	.leverage.is-short .long {
+		opacity: 0.35;
+	}
+
+	.leverage.is-long .long,
+	.leverage.is-short .short {
+		animation: click 360ms cubic-bezier(0.2, 0, 0, 1);
+	}
+
+	@keyframes click {
+		30% {
+			scale: 0.92;
+		}
+	}
+
+</style>
+
+<script>
+	import { roll } from '../utils/roll';
+
+	// Timings, ms: how long a slide takes (longer for a longer way, within
+	// these), and how long it rests on the side clicked before moving on
+	const SLIDE_MIN = 1100;
+	const SLIDE_MAX = 2200;
+	const HOLD = 1600;
+	// Each new spot is at least this far from the last, so it always travels
+	const MIN_TRAVEL = 5;
+	const easeInOut = (t: number) => -(Math.cos(Math.PI * t) - 1) / 2;
+
+	for (const root of document.querySelectorAll<HTMLElement>('.leverage')) {
+		const min = Number(root.dataset.min);
+		const max = Number(root.dataset.max);
+		const ruler = root.querySelector<HTMLElement>('.ruler')!;
+		const marks = [...root.querySelectorAll<HTMLElement>('.mark')];
+		const value = root.querySelector<HTMLElement>('.value')!;
+
+		const show = (leverage: number) => {
+			// Two ticks to each step of leverage, from 0x
+			ruler.style.setProperty('--at', `${leverage * 2}`);
+			for (const mark of marks) {
+				mark.classList.toggle('is-on', Math.abs(Number(mark.dataset.value) - leverage) < 1.25);
+			}
+			roll(value, `${Math.round(leverage)}x`);
+		};
+
+		// Without motion it just sits at 20x
+		if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+			show(20);
+			continue;
+		}
+
+		// A whole number between min and max, far enough from where it is
+		const nextSpot = (from: number) => {
+			let to = from;
+			while (Math.abs(to - from) < MIN_TRAVEL) to = min + Math.floor(Math.random() * (max - min + 1));
+			return to;
+		};
+
+		let at = min;
+		let from = min;
+		let to = nextSpot(min);
+		let slide = 0;
+		let start = 0;
+		let holding = false;
+		let long = true;
+		let frame = 0;
+
+		const tick = (now: number) => {
+			if (!start) start = now;
+			const t = now - start;
+			if (!holding) {
+				const p = Math.min(1, t / slide);
+				at = from + (to - from) * easeInOut(p);
+				show(at);
+				if (p === 1) {
+					// There: click this turn's side
+					holding = true;
+					start = now;
+					root.classList.add(long ? 'is-long' : 'is-short');
+				}
+			} else if (t >= HOLD) {
+				// Let go and set off for the next spot
+				root.classList.remove('is-long', 'is-short');
+				long = !long;
+				holding = false;
+				start = now;
+				from = at;
+				to = nextSpot(at);
+				slide = SLIDE_MIN + ((SLIDE_MAX - SLIDE_MIN) * Math.abs(to - from)) / (max - min);
+			}
+			frame = requestAnimationFrame(tick);
+		};
+
+		// Only runs while it's on screen, carrying on from where it was
+		show(min);
+		slide = SLIDE_MIN + ((SLIDE_MAX - SLIDE_MIN) * Math.abs(to - from)) / (max - min);
+		new IntersectionObserver(([entry]) => {
+			cancelAnimationFrame(frame);
+			if (!entry.isIntersecting) return;
+			// Mid-slide, it carries on from where it stopped
+			if (!holding) from = at;
+			start = 0;
+			frame = requestAnimationFrame(tick);
+		}).observe(root);
+	}
+</script>

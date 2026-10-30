@@ -2,6 +2,8 @@
 // Figma-style touch cursor: over the phone screen, the mouse becomes a
 // translucent circle that shrinks while the button is held. It's a native
 // cursor image, so the OS draws it and it tracks the pointer with no lag.
+// Only in demo mode: the phone takes it from --touch-cursor while
+// .prototype is .is-demo (see PrototypeFrame3D).
 // Render inside .prototype; it finds the .phone and its iframe from there.
 ---
 
@@ -45,7 +47,7 @@
 
 		const show = (index: number) => {
 			current = index;
-			phone.style.cursor = FRAMES[index];
+			phone.style.setProperty('--touch-cursor', FRAMES[index]);
 			frameRoot?.style.setProperty('--touch-cursor', FRAMES[index]);
 		};
 
