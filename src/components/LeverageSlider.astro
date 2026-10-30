@@ -228,7 +228,7 @@ const STEP = 8;
 	const SLIDE_MAX = 2200;
 	const HOLD = 1600;
 	// Each new spot is at least this far from the last, so it always travels
-	const MIN_TRAVEL = 5;
+	const MIN_TRAVEL = 2;
 	const easeInOut = (t: number) => -(Math.cos(Math.PI * t) - 1) / 2;
 
 	for (const root of document.querySelectorAll<HTMLElement>('.leverage')) {
@@ -253,11 +253,17 @@ const STEP = 8;
 			continue;
 		}
 
-		// A whole number between min and max, far enough from where it is
+		// A whole number between min and max, far enough from where it is.
+		// Up or down is a coin toss (unless there's no room that way), then
+		// any distance that way, so it can climb or drop several times in a
+		// row rather than always bouncing back.
 		const nextSpot = (from: number) => {
-			let to = from;
-			while (Math.abs(to - from) < MIN_TRAVEL) to = min + Math.floor(Math.random() * (max - min + 1));
-			return to;
+			const room = { up: max - from, down: from - min };
+			let up = Math.random() < 0.5;
+			if (room[up ? 'up' : 'down'] < MIN_TRAVEL) up = !up;
+			const reach = room[up ? 'up' : 'down'];
+			const distance = MIN_TRAVEL + Math.floor(Math.random() * (reach - MIN_TRAVEL + 1));
+			return Math.round(from) + (up ? distance : -distance);
 		};
 
 		let at = min;
