@@ -2,12 +2,12 @@
 // Site footer, all centred, carrying on from the centred download prompt
 // above: the mailing list sign-up, one row of links, then the legal note,
 // ending with the copyright, as fine print. Text in the Heading, Body 1,
-// Body 2 and Label 1 styles. The links are placeholders until those pages
-// exist.
+// Body 2 and Label 1 styles. X and Instagram go to Purps' profiles; the
+// other links are placeholders until those pages exist.
 const links = [
-	{ name: 'X', href: '#' },
+	{ name: 'X', href: 'https://x.com/purpstrade' },
 	{ name: 'TikTok', href: '#' },
-	{ name: 'Instagram', href: '#' },
+	{ name: 'Instagram', href: 'https://www.instagram.com/purpstrade/' },
 	{ name: 'Contact', href: '#' },
 	{ name: 'Terms', href: '#' },
 	{ name: 'Privacy', href: '#' },
@@ -48,7 +48,15 @@ const links = [
 				{
 					links.map(({ name, href }) => (
 						<li>
-							<a {href}>{name}</a>
+							{/* Other sites open in a new tab */}
+							<a
+								{href}
+								{...(href.startsWith('http')
+									? { target: '_blank', rel: 'noopener noreferrer' }
+									: {})}
+							>
+								{name}
+							</a>
 						</li>
 					))
 				}
