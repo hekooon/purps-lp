@@ -50,7 +50,7 @@ html.intro-wait .subtitle {
    shadow strong enough to lift it off the dark card, and a faint highlight
    along its top edge. */
 :root {
-  --glass-background: color-mix(in srgb, var(--color-text-primary) 5%, transparent);
+  --glass-background: color-mix(in srgb, var(--color-text-primary) 4%, transparent);
   --glass-blur: blur(48px) saturate(1.6);
   --glass-shadow:
     0 12px 40px rgb(0 0 0 / 0.4),
