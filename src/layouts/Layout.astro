@@ -15,10 +15,10 @@ const { title } = Astro.props;
 		<meta name="generator" content={Astro.generator} />
 		<title>{title}</title>
 		<!-- Favicon: the Purps mark (from Figma), dark for light browser themes
-		     and light for dark ones. The SVG switches by itself; PNGs, one per
-		     theme, for browsers without SVG favicons; and for iOS home screens,
-		     the light mark on a dark square. The .ico (dark mark) is for
-		     browsers, Safari among them, that look for /favicon.ico first. -->
+		     and light for dark ones. The SVG switches by itself; a PNG per theme
+		     for browsers without SVG favicons; the .ico (dark mark) for those,
+		     Safari among them, that look for /favicon.ico first; and for iOS
+		     home screens, the light mark on a dark square. -->
 		<link rel="icon" href="/favicon.ico" sizes="32x32" />
 		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 		<link
